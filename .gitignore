@@ -1,5 +1,51 @@
 
 /learn/
-gassu.exe
-/*/**.db
-.exe
+
+# Binaries
+/bin/
+/*.exe
+/*.exe~
+/*.dll
+/*.so
+/*.dylib
+/*.test
+
+# Output of go build
+*.out
+
+# Vendor directory (if not using vendoring, you can remove this)
+vendor/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Logs
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/ # if your project uses a frontend or scripts
+
+# Test coverage files
+*.coverprofile
+*.cov
+coverage.out
+
+# Environment files
+.env
+.env.*
+
+# Database or runtime files
+*.db
+*.sqlite
+tmp/
