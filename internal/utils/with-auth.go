@@ -11,8 +11,6 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
-			// w.WriteHeader(http.StatusUnauthorized)
-			// fmt.Fprint(w, "Missing authorization header")
 			http.Error(w, "Missing authorization header", http.StatusUnauthorized)
 			return
 		}

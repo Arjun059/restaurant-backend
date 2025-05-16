@@ -6,10 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-type User struct {
+type Restaurant struct {
 	ID       uint   `json:"id" gorm:"primaryKey"`
 	Name     string `json:"name"`
-	UserType string `json:"userType"`
+
 	Email    string `json:"email"`
 	Password string `json:"password"`
 
@@ -18,5 +18,5 @@ type User struct {
 
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"` // Enables soft delete
 
-	Blogs []Blog `gorm:"foreignKey:UserID"`
+	Dishes []Dish `gorm:"foreignKey:RestaurantId"`
 }

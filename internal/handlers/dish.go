@@ -13,14 +13,14 @@ import (
 	"gorm.io/gorm"
 )
 
-type ProductHandler struct {
+type DishHandler struct {
 	DB *gorm.DB
 }
 
-func (ph *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+func (ph *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var body models.Product
+	var body models.Dish
 
 	// Decode the request body and handle any potential errors
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -39,7 +39,7 @@ func (ph *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) 
 	io.WriteString(w, "Blog Created")
 }
 
-func (ph *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+func (ph *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var rVars = mux.Vars(r)
@@ -50,22 +50,22 @@ func (ph *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var body models.Product
+	var body models.Dish
 	// Decode the request body and handle any potential errors
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
 
-	if err := ph.DB.Model(&models.Product{}).Where("Id = ? ", id).Updates(&body).Error; err != nil {
+	if err := ph.DB.Model(&models.Dish{}).Where("Id = ? ", id).Updates(&body).Error; err != nil {
 		fmt.Println("this is update error ", err)
 		http.Error(w, "Error Occur", http.StatusInternalServerError)
 		return
 	}
 
-	var updatedProduct models.Product
+	var updatedProduct models.Dish
 	if err := ph.DB.First(updatedProduct, id).Error; err != nil {
-		http.Error(w, "Error Occur on update product", http.StatusBadRequest)
+		http.Error(w, "Error Occur on update dish", http.StatusBadRequest)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (ph *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func (ph *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
+func (ph *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 
 	if err != nil {
@@ -84,11 +84,11 @@ func (ph *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var product models.Product
+	var dish models.Dish
 
-	if err := ph.DB.First(&product, id).Error; err != nil {
+	if err := ph.DB.First(&dish, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "product not found", http.StatusBadRequest)
+			http.Error(w, "dish not found", http.StatusBadRequest)
 			return
 		}
 		http.Error(w, "Internal server Error", http.StatusBadRequest)
@@ -96,13 +96,12 @@ func (ph *ProductHandler) GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&product)
+	json.NewEncoder(w).Encode(&dish)
 
 }
 
-func (ph *ProductHandler) ListProduct(w http.ResponseWriter, r *http.Request) {
-	a, b := r.URL.Query().Get("hello"), r.URL.Query().Get("nice")
-	var products []models.Product
+func (ph *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
+	var products []models.Dish
 
 	if err := ph.DB.Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
@@ -114,7 +113,7 @@ func (ph *ProductHandler) ListProduct(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (ph *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+func (ph *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		fmt.Println("errror not get id", err)

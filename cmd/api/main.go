@@ -28,24 +28,24 @@ func main() {
 	}
 	// Auto-migrate  schema's
 	db.AutoMigrate(
-		&models.User{},
+		&models.Restaurant{},
 		&models.Blog{},
-		&models.Product{},
+		&models.Dish{},
 	)
 
-	userHandler := &handlers.UserHandler{DB: db}
+	restaurantHandler := &handlers.RestaurantHandler{DB: db}
 	blogHandler := &handlers.BlogHandler{DB: db}
-	productHandler := &handlers.ProductHandler{DB: db}
+	dishHandler := &handlers.DishHandler{DB: db}
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/user/get/{id}", userHandler.GetUser).Methods("GET")
-	r.HandleFunc("/user/create", userHandler.CreateUser).Methods("POST")
-	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
-	r.HandleFunc("/user/delete/{id}", userHandler.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/user/get/{id}", restaurantHandler.GetUser).Methods("GET")
+	r.HandleFunc("/user/create", restaurantHandler.CreateUser).Methods("POST")
+	r.HandleFunc("/user/update/{id}", restaurantHandler.UpdateUser).Methods("PUT")
+	r.HandleFunc("/user/delete/{id}", restaurantHandler.DeleteUser).Methods("DELETE")
 
-	r.HandleFunc("/user/sign-up", userHandler.SignupUser).Methods("POST")
-	r.HandleFunc("/user/sign-in", userHandler.SigninUser).Methods("POST")
+	r.HandleFunc("/user/sign-up", restaurantHandler.SignupUser).Methods("POST")
+	r.HandleFunc("/user/sign-in", restaurantHandler.SigninUser).Methods("POST")
 
 	r.HandleFunc("/blog/create", utils.WithAuth(blogHandler.CreateBlog)).Methods("POST")
 	r.HandleFunc("/blog/get/{id}", utils.WithAuth(blogHandler.GetBlog)).Methods("GET")
@@ -53,11 +53,11 @@ func main() {
 	r.HandleFunc("/blog/delete/{id}", utils.WithAuth(blogHandler.DeleteBlog)).Methods("DELETE")
 	r.HandleFunc("/blog/list", utils.WithAuth(blogHandler.ListBlogs)).Methods("GET")
 
-	r.HandleFunc("/product/create", utils.WithAuth(productHandler.CreateProduct)).Methods("POST")
-	r.HandleFunc("/product/update/{id}", utils.WithAuth(productHandler.UpdateProduct)).Methods("PUT")
-	r.HandleFunc("/product/get/{id}", utils.WithAuth(productHandler.GetProduct)).Methods("GET")
-	r.HandleFunc("/product/delete/{id}", utils.WithAuth(productHandler.DeleteProduct)).Methods("DELETE")
-	r.HandleFunc("/product/list", utils.WithAuth(productHandler.ListProduct)).Methods("GET")
+	r.HandleFunc("/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
+	r.HandleFunc("/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
+	r.HandleFunc("/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
+	r.HandleFunc("/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
+	r.HandleFunc("/dish/list", utils.WithAuth(dishHandler.ListDishes)).Methods("GET")
 
 	r.HandleFunc("/protected", utils.WithAuth(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "hello Protected Route")
@@ -68,5 +68,5 @@ func main() {
 	})
 
 	fmt.Println("Server running at: http://localhost:8000")
-	http.ListenAndServe(":8000", r)
+	http.ListenAndServe("localhost:8000", r)
 }

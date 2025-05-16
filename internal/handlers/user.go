@@ -14,16 +14,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserHandler struct {
+type RestaurantHandler struct {
 	DB *gorm.DB
 }
 
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "User Created")
 }
 
-func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 
 	if err != nil {
@@ -31,7 +31,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user models.User
+	var user models.Restaurant
 
 	if err := h.DB.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -48,19 +48,19 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("User Get after json response")
 }
 
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "User Updated")
 }
 
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "User Deleted")
 }
 
-func (h *UserHandler) SignupUser(w http.ResponseWriter, r *http.Request) {
-	var user *models.User
-	var body models.User
+func (h *RestaurantHandler) SignupUser(w http.ResponseWriter, r *http.Request) {
+	var user *models.Restaurant
+	var body models.Restaurant
 
 	// Decode the request body into 'body'
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -87,12 +87,12 @@ func (h *UserHandler) SignupUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(body)
 }
 
-func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
+func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
-	var body models.User
+	var body models.Restaurant
 	json.NewDecoder(r.Body).Decode(&body)
 
-	var user models.User
+	var user models.Restaurant
 
 	log.Printf("Decoded body: %+v\n", body)
 
