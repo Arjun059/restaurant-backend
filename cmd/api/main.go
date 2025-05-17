@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	handlers "gassu/internal/handlers"
-	"gassu/internal/models"
-	"gassu/internal/utils"
+	handlers "restaurant/internal/handlers"
+	"restaurant/internal/models"
+	"restaurant/internal/utils"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	muxHandler "github.com/gorilla/handlers"
 )
 
 func main() {
@@ -39,13 +40,13 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/user/get/{id}", restaurantHandler.GetUser).Methods("GET")
-	r.HandleFunc("/user/create", restaurantHandler.CreateUser).Methods("POST")
-	r.HandleFunc("/user/update/{id}", restaurantHandler.UpdateUser).Methods("PUT")
-	r.HandleFunc("/user/delete/{id}", restaurantHandler.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/restaurant/get/{id}", restaurantHandler.GetUser).Methods("GET")
+	r.HandleFunc("/restaurant/create", restaurantHandler.CreateUser).Methods("POST")
+	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateUser).Methods("PUT")
+	r.HandleFunc("/restaurant/delete/{id}", restaurantHandler.DeleteUser).Methods("DELETE")
 
-	r.HandleFunc("/user/sign-up", restaurantHandler.SignupUser).Methods("POST")
-	r.HandleFunc("/user/sign-in", restaurantHandler.SigninUser).Methods("POST")
+	r.HandleFunc("/restaurant/sign-up", restaurantHandler.SignupUser).Methods("POST")
+	r.HandleFunc("/restaurant/sign-in", restaurantHandler.SigninUser).Methods("POST")
 
 	r.HandleFunc("/blog/create", utils.WithAuth(blogHandler.CreateBlog)).Methods("POST")
 	r.HandleFunc("/blog/get/{id}", utils.WithAuth(blogHandler.GetBlog)).Methods("GET")
@@ -68,5 +69,12 @@ func main() {
 	})
 
 	fmt.Println("Server running at: http://localhost:8000")
-	http.ListenAndServe("localhost:8000", r)
+
+		
+	allowedCorsObj := muxHandler.AllowedOrigins([]string{"*"})
+	allowedMethods := muxHandler.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept"})
+
+	wrappedHandler := muxHandler.CORS(allowedCorsObj, allowedMethods, allowedHeaders)(r)
+	http.ListenAndServe("localhost:8000", wrappedHandler)
 }

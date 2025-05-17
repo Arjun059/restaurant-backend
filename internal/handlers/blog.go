@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gassu/internal/models"
+	"restaurant/internal/models"
 	"log"
 	"net/http"
 	"strconv"

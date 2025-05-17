@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gassu/internal/models"
-	utils "gassu/internal/utils"
+	"restaurant/internal/models"
+	utils "restaurant/internal/utils"
 	"log"
 	"net/http"
 	"strconv"
@@ -98,9 +98,17 @@ func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
 	if e := h.DB.Where("email = ?", body.Email).First(&user).Error; e != nil {
 		log.Printf("Decoded body: %+v\n", e)
+	
+		// w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "User not found",
+			"code": http.StatusNotFound,
+		})
+		return 
 
-		http.Error(w, "User Not Found", http.StatusNotFound)
-		return
+		// http.Error(w, "User Not Found", http.StatusNotFound)
+		// return
 	}
 
 	if user.Email != body.Email || user.Password != body.Password {

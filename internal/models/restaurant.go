@@ -18,5 +18,5 @@ type Restaurant struct {
 
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"` // Enables soft delete
 
-	Dishes []Dish `gorm:"foreignKey:RestaurantId"`
+	Dishes []Dish `gorm:"foreignKey:RestaurantID"`
 }
