@@ -73,8 +73,12 @@ func (h *RestaurantHandler) SignupUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User Already Exists", http.StatusUnprocessableEntity)
 		return
 	}
-
-	// Create a new user since no user was found
+	
+	// hash password
+	hashPassword, _ := utils.HashPassword(body.Password)
+	body.Password = hashPassword
+	
+	// Create a new user since no user was h found
 	if err := h.DB.Create(&body).Error; err != nil {
 		log.Printf("Decoded body: %+v\n", body)
 		log.Printf("Error creating user: %v", err)
@@ -99,19 +103,12 @@ func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 	if e := h.DB.Where("email = ?", body.Email).First(&user).Error; e != nil {
 		log.Printf("Decoded body: %+v\n", e)
 	
-		// w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"message": "User not found",
-			"code": http.StatusNotFound,
-		})
+		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
 		return 
 
-		// http.Error(w, "User Not Found", http.StatusNotFound)
-		// return
 	}
 
-	if user.Email != body.Email || user.Password != body.Password {
+	if user.Email != body.Email || !utils.CheckPasswordHash(body.Password, user.Password) {
 		http.Error(w, "Un Auth", http.StatusUnauthorized)
 		return
 	}
@@ -123,11 +120,8 @@ func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
 	type Response struct {
 		Token   string `json:"token"`
-		Success bool   `json:"success"`
-		Error   bool   `json:"error"`
+		Restaurant models.Restaurant `json:"restaurant"`
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(Response{Token: tokenString, Success: true, Error: false})
-
+	utils.WriteSuccessResponse(w, Response{Token: tokenString, Restaurant: user}, http.StatusOK )
 }
