@@ -18,7 +18,7 @@ import (
 func main() {
 	cwd, _ := os.Getwd()
 
-	err := godotenv.Load(path.Join(cwd, "config", "local.env"))
+	err := godotenv.Load(path.Join(cwd, "config", ".env"))
 	if err != nil {
 		log.Fatalf("Failed to load evn: %v", err)
 	}
