@@ -68,17 +68,25 @@ func main() {
 		fmt.Fprint(w, "hello Protected Route")
 	})).Methods("GET")
 
+	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("!Pong"))
+	}).Methods("GET")
+
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, Gorilla Mux!"))
 	})
 
 	fmt.Println("Server running at: http://0.0.0.0:4000")	
 
-		
+	// cron job for ping service
+	utils.PreventSleepCron()
+	
 	allowedCorsObj := muxHandler.AllowedOrigins([]string{"*"})
 	allowedMethods := muxHandler.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept"})
 
 	wrappedHandler := muxHandler.CORS(allowedCorsObj, allowedMethods, allowedHeaders)(r)
 	http.ListenAndServe("0.0.0.0:4000", wrappedHandler)
+
 }
