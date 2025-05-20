@@ -72,7 +72,7 @@ func main() {
 		w.Write([]byte("Hello, Gorilla Mux!"))
 	})
 
-	fmt.Println("Server running at: http://localhost:8000")
+	fmt.Println("Server running at: http://0.0.0.0:4000")	
 
 		
 	allowedCorsObj := muxHandler.AllowedOrigins([]string{"*"})
@@ -80,5 +80,5 @@ func main() {
 	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept"})
 
 	wrappedHandler := muxHandler.CORS(allowedCorsObj, allowedMethods, allowedHeaders)(r)
-	http.ListenAndServe("localhost:8000", wrappedHandler)
+	http.ListenAndServe("0.0.0.0:4000", wrappedHandler)
 }
