@@ -17,10 +17,12 @@ import (
 
 func main() {
 	cwd, _ := os.Getwd()
-
-	err := godotenv.Load(path.Join(cwd, "config", ".env"))
-	if err != nil {
-		log.Fatalf("Failed to load evn: %v", err)
+	
+	if os.Getenv("ENV") != "production" {
+			err := godotenv.Load(path.Join(cwd, ".env"))
+			if err != nil {
+					log.Fatalf("Failed to load env: %v", err)
+			}
 	}
 
 	db, err := utils.InitDB()
@@ -59,6 +61,8 @@ func main() {
 	r.HandleFunc("/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
 	r.HandleFunc("/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
 	r.HandleFunc("/dish/list", utils.WithAuth(dishHandler.ListDishes)).Methods("GET")
+	r.HandleFunc("/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
+
 
 	r.HandleFunc("/protected", utils.WithAuth(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "hello Protected Route")

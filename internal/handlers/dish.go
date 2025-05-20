@@ -11,13 +11,16 @@ import (
 
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
+
+	"os"
+	"path/filepath"
 )
 
 type DishHandler struct {
 	DB *gorm.DB
 }
 
-func (ph *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
+func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var body models.Dish
@@ -28,7 +31,7 @@ func (ph *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ph.DB.Create(&body).Error; err != nil {
+	if err := dh.DB.Create(&body).Error; err != nil {
 		fmt.Println("Database error:", err) // Log the actual error for debugging
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -39,7 +42,7 @@ func (ph *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Blog Created")
 }
 
-func (ph *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
+func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var rVars = mux.Vars(r)
@@ -57,14 +60,14 @@ func (ph *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ph.DB.Model(&models.Dish{}).Where("Id = ? ", id).Updates(&body).Error; err != nil {
+	if err := dh.DB.Model(&models.Dish{}).Where("Id = ? ", id).Updates(&body).Error; err != nil {
 		fmt.Println("this is update error ", err)
 		http.Error(w, "Error Occur", http.StatusInternalServerError)
 		return
 	}
 
 	var updatedProduct models.Dish
-	if err := ph.DB.First(updatedProduct, id).Error; err != nil {
+	if err := dh.DB.First(updatedProduct, id).Error; err != nil {
 		http.Error(w, "Error Occur on update dish", http.StatusBadRequest)
 		return
 	}
@@ -75,7 +78,7 @@ func (ph *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (ph *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
+func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 
 	if err != nil {
@@ -86,7 +89,7 @@ func (ph *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 
 	var dish models.Dish
 
-	if err := ph.DB.First(&dish, id).Error; err != nil {
+	if err := dh.DB.First(&dish, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "dish not found", http.StatusBadRequest)
 			return
@@ -100,10 +103,10 @@ func (ph *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (ph *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
+func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	var products []models.Dish
 
-	if err := ph.DB.Find(&products).Error; err != nil {
+	if err := dh.DB.Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}
@@ -113,14 +116,14 @@ func (ph *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (ph *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
+func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		fmt.Println("errror not get id", err)
 		http.Error(w, "Id Invalid", http.StatusBadRequest)
 		return
 	}
-	if err := ph.DB.Delete(&models.Blog{}, id).Error; err != nil {
+	if err := dh.DB.Delete(&models.Blog{}, id).Error; err != nil {
 		fmt.Println("error not get id", err)
 		http.Error(w, "Id Invalid", http.StatusBadRequest)
 		return
@@ -128,4 +131,53 @@ func (ph *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	fmt.Fprint(w, "Blog Delete Successfully")
+}
+
+func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request) {
+
+
+	fmt.Println("before fist error ---------------")
+
+	// Parse multipart form with a max memory of 10MB
+	err := r.ParseMultipartForm(10 << 20) // 10 MB
+	if err != nil {
+		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("after fist error ---------------")
+
+	// Get file from form
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to read image from form", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Create uploads directory if not exists
+	os.MkdirAll("uploads", os.ModePerm)
+
+	// Create destination file
+	dst, err := os.Create(filepath.Join("uploads", handler.Filename))
+	if err != nil {
+		http.Error(w, "Failed to save image", http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	// Copy file content
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		http.Error(w, "Failed to write file to disk", http.StatusInternalServerError)
+		return
+	}
+	
+	type Response struct {
+		Url string 	`json:"url"`
+	}
+
+	w.WriteHeader(200)
+  json.NewEncoder(w).Encode(Response{Url: handler.Filename})	
+
 }

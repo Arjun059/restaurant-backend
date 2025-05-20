@@ -109,13 +109,14 @@ func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Email != body.Email || !utils.CheckPasswordHash(body.Password, user.Password) {
-		http.Error(w, "Un Auth", http.StatusUnauthorized)
+		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
 		return
 	}
 
 	tokenString, err := utils.CreateToken(user.Email, user.ID)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
+		return
 	}
 
 	type Response struct {
