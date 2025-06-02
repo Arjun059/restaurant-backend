@@ -49,3 +49,6 @@ coverage.out
 *.db
 *.sqlite
 tmp/
+
+
+/uploads

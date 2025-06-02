@@ -136,7 +136,7 @@ func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 
-	fmt.Println("before fist error ---------------")
+	fmt.Println("Image uploder start")
 
 	// Parse multipart form with a max memory of 10MB
 	err := r.ParseMultipartForm(10 << 20) // 10 MB
@@ -145,10 +145,13 @@ func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fmt.Println("after fist error ---------------")
+	fmt.Println("after parse image error")	
 
 	// Get file from form
 	file, handler, err := r.FormFile("file")
+	
+	fmt.Printf(" this is file %+v", file)
+
 	if err != nil {
 		http.Error(w, "Failed to read image from form", http.StatusBadRequest)
 		return
@@ -177,6 +180,7 @@ func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request
 		Url string 	`json:"url"`
 	}
 
+	fmt.Println("before writing success response handler.Filename", handler.Filename)
 	w.WriteHeader(200)
   json.NewEncoder(w).Encode(Response{Url: handler.Filename})	
 
