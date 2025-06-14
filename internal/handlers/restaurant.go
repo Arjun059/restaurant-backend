@@ -123,6 +123,9 @@ func (h *RestaurantHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 		Token   string `json:"token"`
 		Restaurant models.Restaurant `json:"restaurant"`
 	}
+	var response Response
+	response.Token = tokenString
+	response.Restaurant = user
 
-	utils.WriteSuccessResponse(w, Response{Token: tokenString, Restaurant: user}, http.StatusOK )
+	utils.WriteSuccessResponse(w, "Login success" , http.StatusOK, response)
 }

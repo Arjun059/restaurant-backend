@@ -29,7 +29,6 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 
 	// Decode the request body and handle any potential errors
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		
 		utils.WriteErrorResponse(w, fmt.Sprintf("Invalid JSON payload: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -48,9 +47,11 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("hit before success reponse")
+
 	// Set content type and return success message
 	w.Header().Set("Content-Type", "text/plain")
-	utils.WriteSuccessResponse(w, "Dish Not Added Successfully", 201, nil)
+	utils.WriteSuccessResponse(w, "Dish Added Successfully", 201, nil)
 	
 }
 

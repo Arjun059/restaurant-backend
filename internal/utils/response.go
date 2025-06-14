@@ -19,7 +19,7 @@ func WriteErrorResponse(w http.ResponseWriter, message string, status int) {
     })
 }
 
-func WriteSuccessResponse(w http.ResponseWriter, message string, status int, data *interface{}) {
+func WriteSuccessResponse(w http.ResponseWriter, message string, status int, data interface{}) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
 
