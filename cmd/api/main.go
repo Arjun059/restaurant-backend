@@ -64,6 +64,7 @@ func main() {
 	r.HandleFunc("/admin/dashboard/dish/list", dishHandler.ListDishes).Methods("GET")
 	r.HandleFunc("/admin/dashboard/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
 
+	r.HandleFunc("/dishes", dishHandler.ListDishes).Methods("GET")
 
 	r.HandleFunc("/protected", utils.WithAuth(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "hello Protected Route")

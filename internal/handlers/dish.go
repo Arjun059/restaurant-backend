@@ -125,8 +125,7 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&products)
-
+	utils.WriteSuccessResponse(w, "success", http.StatusOK, products)
 }
 
 func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
