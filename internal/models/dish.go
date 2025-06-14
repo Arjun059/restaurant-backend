@@ -15,7 +15,10 @@ type Dish struct {
 	Price         float64        `json:"price" validate:"required"`
 	DisplayPrice  float64        `json:"displayPrice"`
 
+	Veg bool `json:"veg"`
+
 	Rating  float64        `json:"rating"`
+  BestSeller bool 			 `json:"bestSeller"`
 	
 	RestaurantID  int            `json:"restaurantId"`
 	Restaurant    Restaurant     `json:"user" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
