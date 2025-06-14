@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	utils "restaurant/internal/utils"
 
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
@@ -17,8 +18,9 @@ import (
 )
 
 type DishHandler struct {
-	DB *gorm.DB
+	DB *gorm.DB;
 }
+
 
 func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -27,19 +29,29 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 
 	// Decode the request body and handle any potential errors
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		
+		utils.WriteErrorResponse(w, fmt.Sprintf("Invalid JSON payload: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("Add Dish")
+	fmt.Printf("%v", body)
+  if err := utils.ValidateDish(body); err != nil {
+		fmt.Printf("%v error in validation ", err)
+		utils.WriteErrorResponse(w, fmt.Sprintf("Validation Failed: %v", err) , http.StatusBadRequest)
 		return
 	}
 
 	if err := dh.DB.Create(&body).Error; err != nil {
 		fmt.Println("Database error:", err) // Log the actual error for debugging
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		utils.WriteErrorResponse(w, "Error occur on Add Dish", http.StatusBadRequest)
 		return
 	}
 
 	// Set content type and return success message
 	w.Header().Set("Content-Type", "text/plain")
-	io.WriteString(w, "Blog Created")
+	utils.WriteSuccessResponse(w, "Dish Not Added Successfully", 201, nil)
+	
 }
 
 func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +131,7 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
-		fmt.Println("errror not get id", err)
+		fmt.Println("error not get id", err)
 		http.Error(w, "Id Invalid", http.StatusBadRequest)
 		return
 	}
@@ -136,7 +148,7 @@ func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 
-	fmt.Println("Image uploder start")
+	fmt.Println("Image uploader start")
 
 	// Parse multipart form with a max memory of 10MB
 	err := r.ParseMultipartForm(10 << 20) // 10 MB

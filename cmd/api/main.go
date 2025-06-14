@@ -4,7 +4,7 @@ import (
 	"fmt"
 	handlers "restaurant/internal/handlers"
 	"restaurant/internal/models"
-	"restaurant/internal/utils"
+	utils "restaurant/internal/utils"
 	"log"
 	"net/http"
 	"os"
@@ -56,12 +56,13 @@ func main() {
 	r.HandleFunc("/blog/delete/{id}", utils.WithAuth(blogHandler.DeleteBlog)).Methods("DELETE")
 	r.HandleFunc("/blog/list", utils.WithAuth(blogHandler.ListBlogs)).Methods("GET")
 
-	r.HandleFunc("/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
-	r.HandleFunc("/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
-	r.HandleFunc("/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
-	r.HandleFunc("/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
-	r.HandleFunc("/dish/list", utils.WithAuth(dishHandler.ListDishes)).Methods("GET")
-	r.HandleFunc("/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
+	// r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
+	r.HandleFunc("/admin/dashboard/dish/add", dishHandler.AddDish).Methods("POST")
+	r.HandleFunc("/admin/dashboard/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
+	r.HandleFunc("/admin/dashboard/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
+	r.HandleFunc("/admin/dashboard/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
+	r.HandleFunc("/admin/dashboard/dish/list", dishHandler.ListDishes).Methods("GET")
+	r.HandleFunc("/admin/dashboard/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
 
 
 	r.HandleFunc("/protected", utils.WithAuth(func(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +78,6 @@ func main() {
 		w.Write([]byte("Hello, Gorilla Mux!"))
 	})
 
-	fmt.Println("Server running at: http://0.0.0.0:4000")	
 
 	// cron job for ping service
 	utils.PreventSleepCron()
@@ -87,6 +87,11 @@ func main() {
 	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept"})
 
 	wrappedHandler := muxHandler.CORS(allowedCorsObj, allowedMethods, allowedHeaders)(r)
-	http.ListenAndServe("0.0.0.0:4000", wrappedHandler)
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+	fmt.Println("Server running at:", fmt.Sprintf("%s:%s", host, port))
+
+	loggedRouter := muxHandler.LoggingHandler(log.Writer(), wrappedHandler)
+	http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), loggedRouter)
 
 }

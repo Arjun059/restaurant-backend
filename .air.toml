@@ -1,0 +1,22 @@
+# .air.toml
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main.exe ./cmd/api"
+  bin = "tmp/main.exe"
+  full_bin = ""
+  include_ext = ["go"]
+  exclude_dir = ["vendor", "tmp"]
+  exclude_file = []
+  follow_symlink = true
+
+[log]
+  time = true
+
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"
+  runner = "magenta"

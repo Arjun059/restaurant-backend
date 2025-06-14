@@ -21,6 +21,10 @@ clean.build:
 clean.test:
 	go clean -testcache
 
-dev:
-	CompileDaemon --build="go build -o restaurant.exe cmd/api/main.go" --command="./restaurant.exe" --polling
+.PHONY: dev
+dev: 
+	air
+
+dev.daemon:
+  CompileDaemon --build="go build -o restaurant.exe cmd/api/main.go" --command="./restaurant.exe" --polling
 
