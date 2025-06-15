@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
+	"gorm.io/datatypes"
 
 	"os"
 	"path/filepath"
@@ -19,9 +20,9 @@ import (
 
 	"strings"
 	"github.com/google/uuid"
+	"mime/multipart"
 )
 
-var decoder = schema.NewDecoder()
 
 type DishHandler struct {
 	DB *gorm.DB;
@@ -63,16 +64,16 @@ type DishHandler struct {
 func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	fmt.Printf("content type of request header : %s ", r.Header.Get("content-type"))
+	fmt.Printf("Content-Type of request header: %s\n", r.Header.Get("Content-Type"))
 
-  err := r.ParseMultipartForm(50 << 20) // 50MB max memory
-	if err != nil {
-		fmt.Println("error on parsing request")
-		fmt.Printf("%v", err, )
-		http.Error(w, "Error parsing multipart form data ", http.StatusBadRequest)
+	// Parse multipart form with a 50MB limit
+	if err := r.ParseMultipartForm(50 << 20); err != nil {
+		fmt.Println("Error parsing request:", err)
+		http.Error(w, "Error parsing multipart form data", http.StatusBadRequest)
 		return
 	}
 
+	// Handle uploaded files
 	files := r.MultipartForm.File["images"]
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
@@ -80,69 +81,77 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to open file: "+fileHeader.Filename, http.StatusBadRequest)
 			return
 		}
-		defer file.Close()
 
-		// Create uploads directory if not exists
-		os.MkdirAll("uploads", os.ModePerm)
+		// Use a local variable for each loop to avoid defer leaks
+		func(file multipart.File) {
+			defer file.Close()
 
-		// Create destination file
-    ext := filepath.Ext(fileHeader.Filename)
-    name := strings.TrimSuffix(fileHeader.Filename , ext)
-		uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
-		// dst, err := os.Create(filepath.Join("uploads", uploadedFileName))
+			// Create uploads directory
+			_ = os.MkdirAll("uploads", os.ModePerm)
 
-		// if err != nil {
-		// 	http.Error(w, "Could not save file: "+fileHeader.Filename, http.StatusInternalServerError)
-		// 	return
-		// }
-		// defer dst.Close()
-		// _, err = io.Copy(dst, file)
-		// if err != nil {
-		// 	http.Error(w, "Could not copy file: "+fileHeader.Filename, http.StatusInternalServerError)
-		// 	return
-		// }
+			// Generate unique filename
+			ext := filepath.Ext(fileHeader.Filename)
+			name := strings.TrimSuffix(fileHeader.Filename, ext)
+			uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
 
-	  fmt.Println("before file upload", uploadedFileName)
+			fmt.Println("Before file upload:", uploadedFileName)
 
-		// err = utils.UploadFileToCloud(file, uploadedFileName, fileHeader.Header.Get("Content-Type"))
-		// if err != nil {
-		// 	fmt.Printf("failed to upload supabase %v", err)
-		// 	http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
-	  // fmt.Println("in loop  file upload")
+			// Upload to cloud (Uncomment if needed)
+			// err = utils.UploadFileToCloud(file, uploadedFileName, fileHeader.Header.Get("Content-Type"))
+			// if err != nil {
+			// 	fmt.Printf("Failed to upload to Supabase: %v\n", err)
+			// 	http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
+			// 	return
+			// }
 
+		}(file)
 	}
 
-	fmt.Println("file upload After")
+	fmt.Println("After file upload")
 
+	// Handle categories field (JSON encode string array)
+	categories := r.Form["categories"]
+	categoryJSON, err := json.Marshal(categories)
+	if err != nil {
+		fmt.Println("Error marshaling categories:", err)
+		http.Error(w, "Failed to process categories", http.StatusBadRequest)
+		return
+	}
+
+	// Remove categories from the form so it doesn't interfere with decoding
+  delete(r.MultipartForm.Value, "categories")
+
+	// Decode remaining fields into Dish model
 	var body models.Dish
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
 	if err := decoder.Decode(&body, r.MultipartForm.Value); err != nil {
-		fmt.Printf("error occur on decode %v", err)
-		http.Error(w, "Error decoding form", http.StatusBadRequest)
+		fmt.Printf("Error decoding form: %v\n", err)
+		http.Error(w, "Error decoding form data", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println("Add Dish")
-	fmt.Printf("%v", body)
-  if err := utils.ValidateDish(body); err != nil {
-		fmt.Printf("%v error in validation ", err)
-		utils.WriteErrorResponse(w, fmt.Sprintf("Validation Failed: %v", err) , http.StatusBadRequest)
+	// Validate the dish object
+	if err := utils.ValidateDish(body); err != nil {
+		fmt.Printf("Validation error: %v\n", err)
+		utils.WriteErrorResponse(w, fmt.Sprintf("Validation Failed: %v", err), http.StatusBadRequest)
 		return
 	}
 
+	// Assign category JSON
+	body.Categories = datatypes.JSON(categoryJSON)
+
+	// Save to DB
 	if err := dh.DB.Create(&body).Error; err != nil {
-		fmt.Println("Database error:", err) // Log the actual error for debugging
-		utils.WriteErrorResponse(w, "Error occur on Add Dish", http.StatusBadRequest)
+		fmt.Printf("Database error: %v\n", err)
+		utils.WriteErrorResponse(w, "Error occurred while saving dish", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("hit add dish ----------------- ")
-	fmt.Printf("Decoded struct: %+v", body)
-	
-	utils.WriteSuccessResponse(w, "passed!", http.StatusOK, nil)
-
+	utils.WriteSuccessResponse(w, "Dish added successfully", http.StatusOK, body)
 }
+
 
 func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -207,6 +216,7 @@ func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 
 func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	var products []models.Dish
+	// .Order("created_at desc")
 
 	if err := dh.DB.Order("created_at desc").Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
