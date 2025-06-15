@@ -28,8 +28,8 @@ type DishHandler struct {
 }
 
 
-func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+// func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
+// 	defer r.Body.Close()
 
 	// var body models.Dish
 
@@ -58,10 +58,14 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	// // Set content type and return success message
 	// w.Header().Set("Content-Type", "text/plain")
 	// utils.WriteSuccessResponse(w, "Dish Added Successfully", 201, nil)
+// }
+
+func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 
 	fmt.Printf("content type of request header : %s ", r.Header.Get("content-type"))
 
-  err := r.ParseMultipartForm(100 << 20) // 100MB max memory
+  err := r.ParseMultipartForm(50 << 20) // 50MB max memory
 	if err != nil {
 		fmt.Println("error on parsing request")
 		fmt.Printf("%v", err, )
@@ -85,25 +89,51 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
     ext := filepath.Ext(fileHeader.Filename)
     name := strings.TrimSuffix(fileHeader.Filename , ext)
 		uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
-		dst, err := os.Create(filepath.Join("uploads", uploadedFileName))
+		// dst, err := os.Create(filepath.Join("uploads", uploadedFileName))
 
-		if err != nil {
-			http.Error(w, "Could not save file: "+fileHeader.Filename, http.StatusInternalServerError)
-			return
-		}
-		defer dst.Close()
+		// if err != nil {
+		// 	http.Error(w, "Could not save file: "+fileHeader.Filename, http.StatusInternalServerError)
+		// 	return
+		// }
+		// defer dst.Close()
+		// _, err = io.Copy(dst, file)
+		// if err != nil {
+		// 	http.Error(w, "Could not copy file: "+fileHeader.Filename, http.StatusInternalServerError)
+		// 	return
+		// }
 
-		_, err = io.Copy(dst, file)
-		if err != nil {
-			http.Error(w, "Could not copy file: "+fileHeader.Filename, http.StatusInternalServerError)
-			return
-		}
+	  fmt.Println("before file upload", uploadedFileName)
+
+		// err = utils.UploadFileToCloud(file, uploadedFileName, fileHeader.Header.Get("Content-Type"))
+		// if err != nil {
+		// 	fmt.Printf("failed to upload supabase %v", err)
+		// 	http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+	  // fmt.Println("in loop  file upload")
+
 	}
+
+	fmt.Println("file upload After")
 
 	var body models.Dish
 	if err := decoder.Decode(&body, r.MultipartForm.Value); err != nil {
 		fmt.Printf("error occur on decode %v", err)
 		http.Error(w, "Error decoding form", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("Add Dish")
+	fmt.Printf("%v", body)
+  if err := utils.ValidateDish(body); err != nil {
+		fmt.Printf("%v error in validation ", err)
+		utils.WriteErrorResponse(w, fmt.Sprintf("Validation Failed: %v", err) , http.StatusBadRequest)
+		return
+	}
+
+	if err := dh.DB.Create(&body).Error; err != nil {
+		fmt.Println("Database error:", err) // Log the actual error for debugging
+		utils.WriteErrorResponse(w, "Error occur on Add Dish", http.StatusBadRequest)
 		return
 	}
 
@@ -178,7 +208,7 @@ func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	var products []models.Dish
 
-	if err := dh.DB.Find(&products).Error; err != nil {
+	if err := dh.DB.Order("created_at desc").Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}

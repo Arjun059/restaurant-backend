@@ -9,7 +9,7 @@ type Dish struct {
 	ID            uint           `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name          string         `json:"name" validate:"required,min=3,max=100" schema:"name"` 
 	Description   string         `json:"description" validate:"required" schema:"description"`
-	Category      string 			   `json:"category" validate:"required" schema:"category"` 
+	Category      []string 			   `json:"category" validate:"required" schema:"category"` 
 	PreparationTime string 		   `json:"preparationTime" schema:"preparationTime"`
 
 	Price         float64        `json:"price" validate:"required" schema:"price"`
