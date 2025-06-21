@@ -160,6 +160,9 @@ for  _, fileHeader := range files {
 	// Assign category JSON
 	body.Categories = datatypes.JSON(categoryJSON)
 
+	// TODO: RestaurantID for test only remove after test
+	body.RestaurantID = 1
+
 	// Save to DB
 	if err := dh.DB.Create(&body).Error; err != nil {
 		fmt.Printf("Database error: %v\n", err)
