@@ -77,7 +77,7 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 
 	// Handle uploaded files
 files := r.MultipartForm.File["images"]
-for  index, fileHeader := range files {
+for  _, fileHeader := range files {
 	file, err := fileHeader.Open()
 	if err != nil {
 		http.Error(w, "Failed to open file: "+fileHeader.Filename, http.StatusBadRequest)
