@@ -18,7 +18,7 @@ import (
 func main() {
 	cwd, _ := os.Getwd()
 	
-	if os.Getenv("ENV") != "production" {
+	if os.Getenv("APP_ENV") != "production" {
 			err := godotenv.Load(path.Join(cwd, ".env"))
 			if err != nil {
 					log.Fatalf("Failed to load env: %v", err)
