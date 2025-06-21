@@ -7,9 +7,16 @@ import (
 	"fmt"
 	"mime/multipart"
 	"os"
+	"context"
+)
+import (
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 )
 
-func UploadFileToCloud(file multipart.File, fileName string, contentType string) error {
+
+
+func UploadFileToCloud_Backup(file multipart.File, fileName string, contentType string) error {
 	// Read file into bytes
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
@@ -56,4 +63,24 @@ func UploadFileToCloud(file multipart.File, fileName string, contentType string)
 	fmt.Printf("response body %s", body)
 	return nil
 	// return fmt.Errorf("Supabase upload failed: %s", body)
+}
+
+
+func UploadFileToCloud(file multipart.File, fileName string, folder string) (string, error) {
+	// Load Cloudinary credentials from environment variables
+	cld, err := cloudinary.NewFromURL(os.Getenv("CLOUDINARY_URL"))
+	if err != nil {
+		return "", err
+	}
+
+	uploadResult, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{
+		PublicID: fileName,
+		Folder:   folder,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return uploadResult.SecureURL, nil
 }

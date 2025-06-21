@@ -6,6 +6,12 @@ import (
 	"gorm.io/datatypes"
 )
 
+type FileMeta struct{
+		Name string `json:"name"`
+		Folder string `json:"folder"` 
+		Url string `json:"url"`
+}
+
 type Dish struct {
 	ID            uint           `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name          string         `json:"name" validate:"required,min=3,max=100" schema:"name"` 
@@ -23,6 +29,8 @@ type Dish struct {
 
 	Rating  float64        `json:"rating" schema:"rating"`
   BestSeller bool 			 `json:"bestSeller" schema:"bestSeller"`
+
+	Images datatypes.JSON 	`json:"images"`
 	
 	RestaurantID  int            `json:"restaurantId" schema:"restaurantId"`
 	Restaurant    Restaurant     `json:"user" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`

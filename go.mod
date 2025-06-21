@@ -12,6 +12,8 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/cloudinary/cloudinary-go/v2 v2.10.1 // indirect
+	github.com/creasty/defaults v1.7.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect

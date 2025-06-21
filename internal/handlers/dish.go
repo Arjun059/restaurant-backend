@@ -73,41 +73,54 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+ filesMeta := []models.FileMeta{}
+
 	// Handle uploaded files
-	files := r.MultipartForm.File["images"]
-	for _, fileHeader := range files {
-		file, err := fileHeader.Open()
+files := r.MultipartForm.File["images"]
+for  index, fileHeader := range files {
+	file, err := fileHeader.Open()
+	if err != nil {
+		http.Error(w, "Failed to open file: "+fileHeader.Filename, http.StatusBadRequest)
+		return
+	}
+
+	// Use a local variable for each loop to avoid defer leaks
+	func(file multipart.File) {
+		defer file.Close()
+
+		// Create uploads directory
+		_ = os.MkdirAll("uploads", os.ModePerm)
+
+		ext := filepath.Ext(fileHeader.Filename)
+		name := strings.TrimSuffix(fileHeader.Filename, ext)
+
+		// which folder to upload this assets 
+		// every restaurant have their own folder for image
+		// TODO: fix folder 
+		folder := "dishes"
+
+		uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
+	
+
+		fmt.Println("Before file upload:", uploadedFileName)
+
+		// Call cloud uploader correctly
+		uploadedURL, err := utils.UploadFileToCloud(file, uploadedFileName, folder)
 		if err != nil {
-			http.Error(w, "Failed to open file: "+fileHeader.Filename, http.StatusBadRequest)
+			fmt.Printf("Failed to upload to Supabase: %v\n", err)
+			http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Use a local variable for each loop to avoid defer leaks
-		func(file multipart.File) {
-			defer file.Close()
+		filesMeta = append(filesMeta, models.FileMeta{
+			Name: uploadedFileName,
+			Folder: folder,
+			Url: uploadedURL,
+		})
 
-			// Create uploads directory
-			_ = os.MkdirAll("uploads", os.ModePerm)
-
-			// Generate unique filename
-			ext := filepath.Ext(fileHeader.Filename)
-			name := strings.TrimSuffix(fileHeader.Filename, ext)
-			uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
-
-			fmt.Println("Before file upload:", uploadedFileName)
-
-			// Upload to cloud (Uncomment if needed)
-			// err = utils.UploadFileToCloud(file, uploadedFileName, fileHeader.Header.Get("Content-Type"))
-			// if err != nil {
-			// 	fmt.Printf("Failed to upload to Supabase: %v\n", err)
-			// 	http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
-			// 	return
-			// }
-
-		}(file)
-	}
-
-	fmt.Println("After file upload")
+		fmt.Println("Uploaded URL:", uploadedURL)
+	}(file)
+}
 
 	// Handle categories field (JSON encode string array)
 	categories := r.Form["categories"]
@@ -139,6 +152,12 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	imagesJson, err := json.Marshal(filesMeta)
+	if err != nil {
+		print("error in parsing email to json")
+	} else {
+		body.Images = datatypes.JSON(imagesJson)
+	}
 	// Assign category JSON
 	body.Categories = datatypes.JSON(categoryJSON)
 
@@ -151,7 +170,6 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteSuccessResponse(w, "Dish added successfully", http.StatusOK, body)
 }
-
 
 func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
