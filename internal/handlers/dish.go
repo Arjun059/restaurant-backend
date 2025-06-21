@@ -129,8 +129,7 @@ for  _, fileHeader := range files {
 		fmt.Println("Error marshaling categories:", err)
 		http.Error(w, "Failed to process categories", http.StatusBadRequest)
 		return
-	}
-
+	} 
 	// Remove categories from the form so it doesn't interfere with decoding
   delete(r.MultipartForm.Value, "categories")
 
