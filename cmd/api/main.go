@@ -34,21 +34,28 @@ func main() {
 		&models.Restaurant{},
 		&models.Blog{},
 		&models.Dish{},
+		&models.User{},
 	)
 
 	restaurantHandler := &handlers.RestaurantHandler{DB: db}
 	blogHandler := &handlers.BlogHandler{DB: db}
 	dishHandler := &handlers.DishHandler{DB: db}
+	userHandler := &handlers.UserHandler{DB: db}
 
 	r := mux.NewRouter()
+	
+	r.HandleFunc("/user/get/{id}", userHandler.GetUser).Methods("GET")
+	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
+	r.HandleFunc("/user/delete/{id}", userHandler.DeleteUser).Methods("GET")
 
-	r.HandleFunc("/restaurant/get/{id}", restaurantHandler.GetUser).Methods("GET")
-	r.HandleFunc("/restaurant/create", restaurantHandler.CreateUser).Methods("POST")
-	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateUser).Methods("PUT")
-	r.HandleFunc("/restaurant/delete/{id}", restaurantHandler.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/user/sign-up", userHandler.InviteNewUser).Methods("POST")
+	r.HandleFunc("/user/sign-in", userHandler.SigninUser).Methods("POST")
+	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
 
-	r.HandleFunc("/restaurant/sign-up", restaurantHandler.SignupUser).Methods("POST")
-	r.HandleFunc("/restaurant/sign-in", restaurantHandler.SigninUser).Methods("POST")
+	r.HandleFunc("/restaurant/get/{id}", restaurantHandler.GetRestaurant).Methods("GET")
+	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateRestaurant).Methods("PUT")
+
+	r.HandleFunc("/restaurant/register", restaurantHandler.CreateRestaurantAccount).Methods("POST")
 
 	r.HandleFunc("/blog/create", utils.WithAuth(blogHandler.CreateBlog)).Methods("POST")
 	r.HandleFunc("/blog/get/{id}", utils.WithAuth(blogHandler.GetBlog)).Methods("GET")
@@ -78,7 +85,6 @@ func main() {
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, Gorilla Mux!"))
 	})
-
 
 	// cron job for ping service
 	utils.PreventSleepCron()

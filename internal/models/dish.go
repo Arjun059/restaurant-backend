@@ -16,8 +16,7 @@ type Dish struct {
 	ID            uint           `json:"id" gorm:"primaryKey;autoIncrement"`
 	Name          string         `json:"name" validate:"required,min=3,max=100" schema:"name"` 
 	Description   string         `json:"description" validate:"required" schema:"description"`
-	// Category     []string 			   `json:"category" validate:"required" schema:"category"` 
-	// Category []string `json:"category" validate:"required" schema:"category" gorm:"type:text"`
+	
 	Categories datatypes.JSON `json:"categories"`
 
 	PreparationTime string 		   `json:"preparationTime" schema:"preparationTime"`
@@ -34,8 +33,8 @@ type Dish struct {
 	
 	RestaurantID  int            `json:"restaurantId" schema:"restaurantId"`
 	Restaurant    Restaurant     `json:"user" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
-	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	CreatedAt     time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt     time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt     gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
 

@@ -7,16 +7,17 @@ import (
 )
 
 type Restaurant struct {
-	ID       uint   `json:"id" gorm:"primaryKey"`
-	Name     string `json:"name"`
+  ID       uint   `gorm:"primaryKey"`
+  Name     string
+  Address  string
 
-	Email    string `json:"email"`
+  Email    string `json:"email"`
 	Password string `json:"password"`
+ 
+  Users     []User     `gorm:"foreignKey:RestaurantID"` // future version add user for restaurant
+  Dishes    []Dish     `gorm:"foreignKey:RestaurantID"`
 
-	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"` // Automatically managed by GORM
-	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
-
-	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"` // Enables soft delete
-
-	Dishes []Dish `gorm:"foreignKey:RestaurantID"`
+  CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+  UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
+  DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }
