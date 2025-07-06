@@ -11,6 +11,8 @@ type Restaurant struct {
   Name     string
   Address  string
 
+  QrCodePath  string `json:"qrCodePath"`
+
   Email    string `json:"email"`
 	Password string `json:"password"`
  

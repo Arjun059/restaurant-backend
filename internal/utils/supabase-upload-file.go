@@ -66,7 +66,7 @@ func UploadFileToCloud_Backup(file multipart.File, fileName string, contentType 
 }
 
 
-func UploadFileToCloud(file multipart.File, fileName string, folder string) (string, error) {
+func UploadFileToCloud(file io.Reader, fileName string, folder string) (string, error) {
 	// Load Cloudinary credentials from environment variables
 	cld, err := cloudinary.NewFromURL(os.Getenv("CLOUDINARY_URL"))
 	if err != nil {

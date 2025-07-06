@@ -48,7 +48,7 @@ func main() {
 	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
 	r.HandleFunc("/user/delete/{id}", userHandler.DeleteUser).Methods("GET")
 
-	r.HandleFunc("/user/sign-up", userHandler.InviteNewUser).Methods("POST")
+	r.HandleFunc("/user/sign-up", userHandler.InviteUser).Methods("POST")
 	r.HandleFunc("/user/sign-in", userHandler.SigninUser).Methods("POST")
 	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
 

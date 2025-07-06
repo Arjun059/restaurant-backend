@@ -100,6 +100,8 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 		return
 	}
 
+	utils.GenerateQr("http://hello.com")
+
 	// Encode the newly created user in the response
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(reqBody)
