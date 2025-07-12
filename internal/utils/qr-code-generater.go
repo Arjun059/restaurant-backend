@@ -9,7 +9,7 @@ import (
 
 var qrCodeFolder = "qr-codes"
 
-func GenerateQr(fileName string) (string, error) {
+func GenerateQrAndUploadToCloud(fileName string) (string, error) {
 	// var qrCodeFileName = "abc.png"
 	// err := qrcode.WriteFile("https://example.com", qrcode.Medium, 256, qrCodeFileName)
 	// if err != nil {

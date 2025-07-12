@@ -7,17 +7,16 @@ import (
 )
 
 type Restaurant struct {
-  ID       uint   `gorm:"primaryKey"`
-  Name     string
-  Address  string
+  ID       uint   `json:"id" gorm:"primaryKey"`
+  Name     string `json:"name"`
+  Address  string  `json:"address"`
 
-  QrCodePath  string `json:"qrCodePath"`
+  QrCodePath  string `json:"qrCodePath"`  
 
-  Email    string `json:"email"`
-	Password string `json:"password"`
+  URLPath  string `json:"urlPath"`  
  
-  Users     []User     `gorm:"foreignKey:RestaurantID"` // future version add user for restaurant
-  Dishes    []Dish     `gorm:"foreignKey:RestaurantID"`
+  Users     []User     `json:"users" gorm:"foreignKey:RestaurantID"` // future version add user for restaurant
+  Dishes    []Dish     `json:"dishes" gorm:"foreignKey:RestaurantID"`
 
   CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
   UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`

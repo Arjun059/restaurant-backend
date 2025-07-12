@@ -61,8 +61,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 	// change code [ no sign up flow in the current auth flow ]
 
-	var user *models.Restaurant
-	var body models.Restaurant
+	var user *models.User
+	var body models.User
 
 	// Decode the request body into 'body'
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -95,10 +95,10 @@ func (h *UserHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
-	var body models.Restaurant
+	var body models.User
 	json.NewDecoder(r.Body).Decode(&body)
 
-	var user models.Restaurant
+	var user models.User
 
 	log.Printf("Decoded body: %+v\n", body)
 
@@ -123,7 +123,7 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
 	type Response struct {
 		Token   string `json:"token"`
-		Restaurant models.Restaurant `json:"restaurant"`
+		Restaurant models.User `json:"restaurant"`
 	}
 	var response Response
 	response.Token = tokenString
