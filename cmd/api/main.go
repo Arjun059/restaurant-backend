@@ -63,8 +63,8 @@ func main() {
 	r.HandleFunc("/blog/delete/{id}", utils.WithAuth(blogHandler.DeleteBlog)).Methods("DELETE")
 	r.HandleFunc("/blog/list", utils.WithAuth(blogHandler.ListBlogs)).Methods("GET")
 
-	// r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
-	r.HandleFunc("/admin/dashboard/dish/add", dishHandler.AddDish).Methods("POST")
+	r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
+	// r.HandleFunc("/admin/dashboard/dish/add", dishHandler.AddDish).Methods("POST")
 	r.HandleFunc("/admin/dashboard/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
 	r.HandleFunc("/admin/dashboard/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
 	r.HandleFunc("/admin/dashboard/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
@@ -89,11 +89,11 @@ func main() {
 	// cron job for ping service
 	utils.PreventSleepCron()
 	
-	allowedCorsObj := muxHandler.AllowedOrigins([]string{"*"})
+	allowedOrigins := muxHandler.AllowedOrigins([]string{"*"})
 	allowedMethods := muxHandler.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept"})
+	allowedHeaders :=  muxHandler.AllowedHeaders([]string{"Content-Type", "Authorization", "Accept", "token"})
 
-	wrappedHandler := muxHandler.CORS(allowedCorsObj, allowedMethods, allowedHeaders)(r)
+	wrappedHandler := muxHandler.CORS(allowedOrigins, allowedMethods, allowedHeaders)(r)
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	fmt.Println("Server running at:", fmt.Sprintf("%s:%s", host, port))

@@ -160,8 +160,12 @@ for  _, fileHeader := range files {
 	// Assign category JSON
 	body.Categories = datatypes.JSON(categoryJSON)
 
+	userID, _, restID := utils.GetAuthContext(r)
+  fmt.Println("User ID:", userID)
+  fmt.Println("restID ID:", restID)
+	
 	// TODO: RestaurantID for test only remove after test
-	body.RestaurantID = 1
+	body.RestaurantID = restID;
 
 	// Save to DB
 	if err := dh.DB.Create(&body).Error; err != nil {

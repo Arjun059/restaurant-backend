@@ -99,10 +99,9 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&body)
 
 	var user models.User
-
 	log.Printf("Decoded body: %+v\n", body)
 
-	if e := h.DB.Where("email = ?", body.Email).First(&user).Error; e != nil {
+	if e := h.DB.Where("email = ?", body.Email).Preload("Restaurant").First(&user).Error; e != nil {
 		log.Printf("Decoded body: %+v\n", e)
 	
 		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
@@ -111,23 +110,23 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Email != body.Email || !utils.CheckPasswordHash(body.Password, user.Password) {
-		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
+		utils.WriteErrorResponse(w, "Invalid credential", http.StatusNotFound)
 		return
 	}
 
-	tokenString, err := utils.CreateToken(user.Email, user.ID)
+	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID)
 	if err != nil {
-		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
+		utils.WriteErrorResponse(w, "Internal server error", http.StatusNotFound)
 		return
 	}
 
 	type Response struct {
 		Token   string `json:"token"`
-		Restaurant models.User `json:"restaurant"`
+		User models.User `json:"user"`
 	}
 	var response Response
 	response.Token = tokenString
-	response.Restaurant = user
+	response.User = user
 
 	utils.WriteSuccessResponse(w, "Login success" , http.StatusOK, response)
 }

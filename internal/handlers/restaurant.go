@@ -40,6 +40,7 @@ func (h *RestaurantHandler) GetRestaurant(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("content-type", "application/json")
 	json.NewEncoder(w).Encode(&restaurant)
 
 	fmt.Println("User Get after json response")
@@ -118,6 +119,7 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 	}
 
 	// Encode the newly created user in the response
+	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(reqBody)
 

@@ -16,7 +16,7 @@ type User struct {
 	Role string `json:"role"` // New field to define employee role (e.g., "owner", "manager", "editor")
 
 	RestaurantID uint       `json:"restaurantId"`
-	Restaurant   Restaurant `gorm:"foreignKey:RestaurantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Restaurant   Restaurant `json:"restaurant" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`

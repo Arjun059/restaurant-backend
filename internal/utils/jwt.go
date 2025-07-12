@@ -10,11 +10,12 @@ import (
 
 var secretKey = []byte("secret-key")
 
-func CreateToken(user_email string, user_id uint) (string, error) {
+func CreateToken( user_id uint, user_email string,restaurant_id uint) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"user_email": user_email,
-			"user_id":    user_id,
+			"userEmail": user_email,
+			"userId":    user_id,
+			"restaurantId": restaurant_id,
 			"exp":        time.Now().Add(time.Hour * 24).Unix(),
 		})
 
@@ -26,21 +27,21 @@ func CreateToken(user_email string, user_id uint) (string, error) {
 	return tokenString, nil
 }
 
-func VerifyToken(tokenString string) error {
+func VerifyToken(tokenString string) (map[string]interface{}, error ) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Log the token details
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		log.Printf("Token is valid. Claims: %v", claims)
-		return nil
+		return claims, nil
 	} else {
 		log.Printf("Invalid token or claims: %v", token)
-		return errors.New("invalid token or claim")
+		return nil, errors.New("invalid token or claim")
 	}
 }
