@@ -89,7 +89,7 @@ for  _, fileHeader := range files {
 		defer file.Close()
 
 		// Create uploads directory
-		_ = os.MkdirAll("uploads", os.ModePerm)
+		// _ = os.MkdirAll("uploads", os.ModePerm)
 
 		ext := filepath.Ext(fileHeader.Filename)
 		name := strings.TrimSuffix(fileHeader.Filename, ext)
@@ -99,7 +99,9 @@ for  _, fileHeader := range files {
 		// TODO: fix folder 
 		folder := "dishes"
 
-		uploadedFileName := fmt.Sprintf("%s_%s%s", name, uuid.New().String(), ext)
+		fmt.Println("ext ------", ext)
+
+		uploadedFileName := fmt.Sprintf("%s_%s", name, uuid.New().String())
 	
 
 		fmt.Println("Before file upload:", uploadedFileName)
@@ -113,7 +115,7 @@ for  _, fileHeader := range files {
 		}
 
 		filesMeta = append(filesMeta, models.FileMeta{
-			Name: uploadedFileName,
+			Name: fmt.Sprintf("%s%s", uploadedFileName, ext), // add file ext when save to db
 			Folder: folder,
 			Url: uploadedURL,
 		})
@@ -166,6 +168,7 @@ for  _, fileHeader := range files {
 	
 	// TODO: RestaurantID for test only remove after test
 	body.RestaurantID = restID;
+	body.UserID = userID;
 
 	// Save to DB
 	if err := dh.DB.Create(&body).Error; err != nil {

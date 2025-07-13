@@ -42,10 +42,10 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&user)
+	// w.WriteHeader(http.StatusOK)
+	// json.NewEncoder(w).Encode(&user)
 
-	fmt.Println("User Get after json response")
+	utils.WriteSuccessResponse(w, "success", http.StatusOK, &user )
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
