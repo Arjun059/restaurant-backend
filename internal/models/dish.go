@@ -8,7 +8,7 @@ import (
 
 type FileMeta struct{
 		Name string `json:"name"`
-		Folder string `json:"folder"` 
+		Folder string `json:"folder"`
 		Url string `json:"url"`
 }
 

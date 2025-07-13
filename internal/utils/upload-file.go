@@ -84,3 +84,4 @@ func UploadFileToCloud(file io.Reader, fileName string, folder string) (string, 
 
 	return uploadResult.SecureURL, nil
 }
+

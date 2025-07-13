@@ -111,11 +111,12 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 	}
 
   siteUrl := os.Getenv("SITE_URL")
-	url := fmt.Sprintf("%s/%s", siteUrl,	reqBody.Restaurant.URLPath)
-	err = h.DB.Model(&reqBody.Restaurant).Where("id = ?", reqBody.Restaurant.ID).Update("QrCodePath", url).Error
+	qrURL := fmt.Sprintf("%s/%s/%d", siteUrl, "restaurant" ,	reqBody.Restaurant.ID)
+  uploadedURL, _ :=	utils.GenerateQrAndUploadToCloud(qrURL, reqBody.Restaurant.ID)
+
+	err = h.DB.Model(&reqBody.Restaurant).Where("id = ?", reqBody.Restaurant.ID).Update("QrCodePath", uploadedURL).Error;
 	if err != nil {
-		utils.WriteErrorResponse(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		fmt.Println("error occur on create qrcode")
 	}
 
 	// Encode the newly created user in the response

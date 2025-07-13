@@ -30,8 +30,7 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 		tokenClaims, err := VerifyToken(tokenString)
 
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Invalid token")
+			WriteErrorResponse(w, "Auth Failed", http.StatusUnauthorized)
 			return
 		}
 

@@ -5,11 +5,12 @@ import (
 	"bytes"
 	"log"
 	"fmt"
+	"github.com/google/uuid"
 )
 
 var qrCodeFolder = "qr-codes"
 
-func GenerateQrAndUploadToCloud(fileName string) (string, error) {
+func GenerateQrAndUploadToCloud(restaurantURL string, restaurantID uint) (string, error) {
 	// var qrCodeFileName = "abc.png"
 	// err := qrcode.WriteFile("https://example.com", qrcode.Medium, 256, qrCodeFileName)
 	// if err != nil {
@@ -17,7 +18,7 @@ func GenerateQrAndUploadToCloud(fileName string) (string, error) {
 	// }
 
 	// Step 1: Generate QR code as PNG byte slice
-	png, err := qrcode.Encode("https://example.org", qrcode.Medium, 256)
+	png, err := qrcode.Encode(restaurantURL, qrcode.Medium, 256)
 	if err != nil {
 		log.Fatal("Error generating QR code:", err)
 	}
@@ -25,14 +26,18 @@ func GenerateQrAndUploadToCloud(fileName string) (string, error) {
 	// Step 2: Wrap it in bytes.Reader
 	pngReader := bytes.NewReader(png)
 
+	restaurantIDString := fmt.Sprintf("%d", restaurantID)
+
+	filename := fmt.Sprintf("%s_%s", restaurantIDString, uuid.New().String())
+
 		// Step 3: Upload
-	url, err := UploadFileToCloud(pngReader, "my_qr_code", qrCodeFolder)
+	uploadedURL, err := UploadFileToCloud(pngReader, filename, qrCodeFolder)
 	if err != nil {
 		log.Fatal("Upload failed:", err)
 		return "", err
 	}
 	
-	fmt.Println("QR code uploaded to:", url)
-	return url, nil
+	fmt.Println("QR code uploaded to:", uploadedURL)
+	return uploadedURL, nil
 }
 
