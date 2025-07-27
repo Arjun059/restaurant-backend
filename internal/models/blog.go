@@ -3,11 +3,12 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Blog struct {
-	ID      uint   `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID            uuid.UUID      `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
 	RestaurantID  uint   `json:"restaurantId"`

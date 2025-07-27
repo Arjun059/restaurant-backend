@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 	"gorm.io/gorm"
+	"github.com/google/uuid"
 	"gorm.io/datatypes"
 )
 
@@ -13,7 +14,7 @@ type FileMeta struct{
 }
 
 type Dish struct {
-	ID            uint           `json:"id" gorm:"primaryKey;autoIncrement"`
+	ID            uuid.UUID      `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
 	Name          string         `json:"name" validate:"required,min=3,max=100" schema:"name"` 
 	Description   string         `json:"description" validate:"required" schema:"description"`
 	
@@ -31,10 +32,10 @@ type Dish struct {
 
 	Images datatypes.JSON        `json:"images"`
 
-	UserID  uint                  `json:"userId" schema:"userId"`
+	UserID    uuid.UUID          `json:"userId" schema:"userId"`
 	User    User                 `json:"user" gorm:"foreignKey:UserID;references:ID"`
 	
-	RestaurantID  uint            `json:"restaurantId" schema:"restaurantId"`
+	RestaurantID   uuid.UUID     `json:"restaurantId" schema:"restaurantId"`
 	Restaurant    Restaurant     `json:"restaurant" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	CreatedAt     time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`

@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var secretKey = []byte("secret-key")
 
-func CreateToken( user_id uint, user_email string,restaurant_id uint, restaurant_url_path string) (string, error) {
+func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, restaurant_url_path string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"userEmail": user_email,

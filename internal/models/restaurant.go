@@ -4,10 +4,11 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+  "github.com/google/uuid"
 )
 
 type Restaurant struct {
-  ID       uint   `json:"id" gorm:"primaryKey"`
+  ID       uuid.UUID      `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
   Name     string `json:"name"`
   Address  string  `json:"address"`
 

@@ -65,6 +65,7 @@ func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	authContext := utils.GetAuthContext(r)
+	// fmt.Printf("authContext %+v", authContext)
 
 	fmt.Printf("Content-Type of request header: %s\n", r.Header.Get("Content-Type"))
 
@@ -95,11 +96,7 @@ for  _, fileHeader := range files {
 
 		// which folder to upload this assets 
 		// every restaurant have their own folder for image
-		// TODO: fix folder 
-		// folder := "dishes"
-
-		// fmt.Printf("authContext %+v", authContext)
-		folder := authContext.RestaurantURLPath
+		folder := authContext.RestaurantID.String()
 
 		uploadedFileName := fmt.Sprintf("%s_%s", name, uuid.New().String())
 
@@ -212,7 +209,7 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	id, err := uuid.Parse(mux.Vars(r)["id"])
 
 	if err != nil {
 		fmt.Println("this is err get", err)
@@ -241,8 +238,8 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	// .Order("created_at desc")
 
 	var rVars = mux.Vars(r)
-	restaurantID, err := strconv.Atoi(rVars["restaurantID"])	
-	// fmt.Println(restaurantID, "restaurantID")
+	restaurantID, err := uuid.Parse(rVars["restaurantID"])	
+	fmt.Println(restaurantID, "restaurantID")
 
 	if err != nil {
 			http.Error(w, "Restaurant ID is required", http.StatusBadRequest)
