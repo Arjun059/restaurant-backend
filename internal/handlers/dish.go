@@ -198,7 +198,7 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dh.DB.Model(&models.Dish{}).Where("Id = ? ", id).Updates(&body).Error; err != nil {
+	if err := dh.DB.Model(&models.Dish{}).Where("ID = ? ", id).Updates(&body).Error; err != nil {
 		fmt.Println("this is update error ", err)
 		http.Error(w, "Error Occur", http.StatusInternalServerError)
 		return
@@ -245,7 +245,14 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 	var products []models.Dish
 	// .Order("created_at desc")
 
-	if err := dh.DB.Order("created_at desc").Find(&products).Error; err != nil {
+	var rVars = mux.Vars(r)
+	restaurantID, err := strconv.Atoi(rVars["restaurantID"])	
+
+	if err != nil {
+			http.Error(w, "Restaurant ID is required", http.StatusBadRequest)
+	}
+
+	if err := dh.DB.Where("ID = ?", restaurantID).Order("created_at desc").Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}

@@ -11,7 +11,9 @@ type Restaurant struct {
   Name     string `json:"name"`
   Address  string  `json:"address"`
 
-  QrCodePath  string `json:"qrCodePath"`  
+  QrCodeURL  string `json:"qrCodeURL"` 
+  
+  URLPath string `json:"urlPath"`
 
   Users     []User     `json:"users" gorm:"foreignKey:RestaurantID"` // future version add user for restaurant
   Dishes    []Dish     `json:"dishes" gorm:"foreignKey:RestaurantID"`

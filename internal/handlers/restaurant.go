@@ -46,14 +46,37 @@ func (h *RestaurantHandler) GetRestaurant(w http.ResponseWriter, r *http.Request
 	fmt.Println("User Get after json response")
 }
 
+func (h *RestaurantHandler) GetRestaurantByUrl(w http.ResponseWriter, r *http.Request) {
+	url := mux.Vars(r)["url"]
+
+	var restaurant models.Restaurant
+
+	fmt.Println("urlpath", url)
+
+	if err := h.DB.Where("url_path = ?", url).First(&restaurant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, fmt.Sprintf("Restaurant not found with url  %s", url), http.StatusNotFound)
+			return
+		}
+		fmt.Printf("db error %+v", err)
+		http.Error(w, "internal server error", http.StatusBadRequest)
+		return
+	}
+
+	utils.WriteSuccessResponse(
+		w,
+		"success",
+		http.StatusOK,
+		&restaurant,
+	)
+}
+
 func (h *RestaurantHandler) UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "User Updated")
 }
 
 func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Println("Hit CreateRestaurantAccount")
 
 	type RestaurantAccountRequest struct {
 		User models.User `json:"user"`
@@ -70,32 +93,40 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 
 	// fmt.Printf("%+v req body", reqBody )
 
-	// Check if a user with the same email already exists
-	err := h.DB.Where("email = ?", reqBody.User.Email).First(&models.User{}).Error; 
-  if	err == nil {
-		// if record not found get the err with gorm not found error
-	   	utils.WriteErrorResponse(w, "User Already Exists", http.StatusUnprocessableEntity)
-	   	return
+	var userExist models.User
+	err :=  h.DB.Where("email = ?", reqBody.User.Email).First(&userExist).Error
+
+	if err == nil {
+			// Email exists 
+			utils.WriteErrorResponse(w, "User email already exists", http.StatusBadRequest)
+			return
 	}
-	
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+			// Some other DB error (not "not found") → return 500
+			utils.WriteErrorResponse(w, "Internal server error!", http.StatusInternalServerError)
+			return
+	}
+
+	// fmt.Printf("find user %+v", userExist)
+
 	// hash password
 	hashPassword, _ := utils.HashPassword(reqBody.User.Password)
 	reqBody.User.Password = hashPassword
+
+	reqBody.Restaurant.URLPath = uuid.New().String()
 	
   insertErr := h.DB.Transaction(func(tx *gorm.DB) error {
-
-		// create restaurant
-		reqBody.Restaurant.URLPath = uuid.New().String()
+	  // create restaurant
 		if err := tx.Create(&reqBody.Restaurant).Error; err != nil {
-			log.Printf("Decoded body: %+v\n", reqBody)
-			log.Printf("Error creating user: %v", err)
 			return err
 		}
 
 		// add restaurant id to user
 		reqBody.User.RestaurantID = reqBody.Restaurant.ID
 		reqBody.User.Role = "owner"
-		// Create a new user since no user was found
+
+		// Create a new owner user for the restaurant
 		if err := tx.Create(&reqBody.User).Error; err != nil {
 			// log.Printf("Decoded body reqBody: %+v\n", )
 			log.Printf("Error creating user: %v", err)
@@ -111,11 +142,10 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 	}
 
   siteUrl := os.Getenv("SITE_URL")
-	qrURL := fmt.Sprintf("%s/%s/%d", siteUrl, "restaurant" ,	reqBody.Restaurant.ID)
-  uploadedURL, _ :=	utils.GenerateQrAndUploadToCloud(qrURL, reqBody.Restaurant.ID)
+	qrURL := fmt.Sprintf("%s/%s/%s/%s", siteUrl, "c", reqBody.Restaurant.URLPath, "home")
+  uploadedURL, _ :=	utils.GenerateQrAndUploadToCloud(qrURL, reqBody.Restaurant.URLPath)
 
-	err = h.DB.Model(&reqBody.Restaurant).Where("id = ?", reqBody.Restaurant.ID).Update("QrCodePath", uploadedURL).Error;
-	if err != nil {
+	if err := h.DB.Model(&reqBody.Restaurant).Where("id = ?", reqBody.Restaurant.ID).Update("QrCodeURL", uploadedURL).Error; err != nil {
 		fmt.Println("error occur on create qrcode")
 	}
 

@@ -5,12 +5,12 @@ import (
 	"bytes"
 	"log"
 	"fmt"
-	"github.com/google/uuid"
+	// "github.com/google/uuid"
 )
 
 var qrCodeFolder = "qr-codes"
 
-func GenerateQrAndUploadToCloud(restaurantURL string, restaurantID uint) (string, error) {
+func GenerateQrAndUploadToCloud(restaurantURL string, restaurantURLPath string) (string, error) {
 	// var qrCodeFileName = "abc.png"
 	// err := qrcode.WriteFile("https://example.com", qrcode.Medium, 256, qrCodeFileName)
 	// if err != nil {
@@ -26,9 +26,7 @@ func GenerateQrAndUploadToCloud(restaurantURL string, restaurantID uint) (string
 	// Step 2: Wrap it in bytes.Reader
 	pngReader := bytes.NewReader(png)
 
-	restaurantIDString := fmt.Sprintf("%d", restaurantID)
-
-	filename := fmt.Sprintf("%s_%s", restaurantIDString, uuid.New().String())
+	filename := restaurantURLPath
 
 		// Step 3: Upload
 	uploadedURL, err := UploadFileToCloud(pngReader, filename, qrCodeFolder)

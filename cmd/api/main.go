@@ -53,6 +53,7 @@ func main() {
 	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")
 
 	r.HandleFunc("/restaurant/get/{id}", restaurantHandler.GetRestaurant).Methods("GET")
+	r.HandleFunc("/restaurant/get/url/{url}", restaurantHandler.GetRestaurantByUrl).Methods("GET")
 	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateRestaurant).Methods("PUT")
 
 	r.HandleFunc("/restaurant/register", restaurantHandler.CreateRestaurantAccount).Methods("POST")
@@ -71,7 +72,7 @@ func main() {
 	r.HandleFunc("/admin/dashboard/dish/list", dishHandler.ListDishes).Methods("GET")
 	r.HandleFunc("/admin/dashboard/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
 
-	r.HandleFunc("/dishes", dishHandler.ListDishes).Methods("GET")
+	r.HandleFunc("/dishes/{restaurantID}", dishHandler.ListDishes).Methods("GET")
 
 	r.HandleFunc("/protected", utils.WithAuth(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "hello Protected Route")
