@@ -10,12 +10,13 @@ import (
 
 var secretKey = []byte("secret-key")
 
-func CreateToken( user_id uint, user_email string,restaurant_id uint) (string, error) {
+func CreateToken( user_id uint, user_email string,restaurant_id uint, restaurant_url_path string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"userEmail": user_email,
 			"userId":    user_id,
 			"restaurantId": restaurant_id,
+			"restaurantURLPath": restaurant_url_path,
 			"exp":        time.Now().Add(time.Hour * 24).Unix(),
 		})
 

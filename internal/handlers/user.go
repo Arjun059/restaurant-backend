@@ -114,7 +114,7 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID)
+	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID, user.Restaurant.URLPath)
 	if err != nil {
 		utils.WriteErrorResponse(w, "Internal server error", http.StatusNotFound)
 		return

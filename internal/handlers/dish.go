@@ -64,6 +64,8 @@ type DishHandler struct {
 func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
+	authContext := utils.GetAuthContext(r)
+
 	fmt.Printf("Content-Type of request header: %s\n", r.Header.Get("Content-Type"))
 
 	// Parse multipart form with a 50MB limit
@@ -88,21 +90,18 @@ for  _, fileHeader := range files {
 	func(file multipart.File) {
 		defer file.Close()
 
-		// Create uploads directory
-		// _ = os.MkdirAll("uploads", os.ModePerm)
-
 		ext := filepath.Ext(fileHeader.Filename)
 		name := strings.TrimSuffix(fileHeader.Filename, ext)
 
 		// which folder to upload this assets 
 		// every restaurant have their own folder for image
 		// TODO: fix folder 
-		folder := "dishes"
+		// folder := "dishes"
 
-		fmt.Println("ext ------", ext)
+		// fmt.Printf("authContext %+v", authContext)
+		folder := authContext.RestaurantURLPath
 
 		uploadedFileName := fmt.Sprintf("%s_%s", name, uuid.New().String())
-	
 
 		fmt.Println("Before file upload:", uploadedFileName)
 
@@ -161,14 +160,10 @@ for  _, fileHeader := range files {
 	}
 	// Assign category JSON
 	body.Categories = datatypes.JSON(categoryJSON)
-
-	userID, _, restID := utils.GetAuthContext(r)
-  fmt.Println("User ID:", userID)
-  fmt.Println("restID ID:", restID)
 	
 	// TODO: RestaurantID for test only remove after test
-	body.RestaurantID = restID;
-	body.UserID = userID;
+	body.RestaurantID = authContext.RestaurantID;
+	body.UserID = authContext.UserID;
 
 	// Save to DB
 	if err := dh.DB.Create(&body).Error; err != nil {
@@ -247,12 +242,13 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 
 	var rVars = mux.Vars(r)
 	restaurantID, err := strconv.Atoi(rVars["restaurantID"])	
+	// fmt.Println(restaurantID, "restaurantID")
 
 	if err != nil {
 			http.Error(w, "Restaurant ID is required", http.StatusBadRequest)
 	}
 
-	if err := dh.DB.Where("ID = ?", restaurantID).Order("created_at desc").Find(&products).Error; err != nil {
+	if err := dh.DB.Where("restaurant_id = ?", restaurantID).Order("created_at desc").Find(&products).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}
