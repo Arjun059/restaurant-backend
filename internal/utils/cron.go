@@ -9,7 +9,7 @@ import (
 
 // PreventSleepCron starts a cron job that runs every 5 seconds and every 5 minutes
 func PreventSleepCron() {
-	c := cron.New(cron.WithSeconds()) // ✅ enables seconds field
+	c := cron.New(cron.WithSeconds()) 
 
 	// Every 5 minutes
 	c.AddFunc("*/5 * * * *", func() {

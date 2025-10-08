@@ -15,7 +15,6 @@ import (
 )
 
 
-
 func UploadFileToCloud_Backup(file multipart.File, fileName string, contentType string) error {
 	// Read file into bytes
 	fileBytes, err := io.ReadAll(file)

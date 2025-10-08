@@ -7,9 +7,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"os"
 )
 
-var secretKey = []byte("secret-key")
+var secretKey = os.Getenv("JWT_SECRET")
 
 func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, restaurant_url_path string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,

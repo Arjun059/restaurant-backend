@@ -38,23 +38,6 @@ func (bh *BlogHandler) CreateBlog(w http.ResponseWriter, r *http.Request) {
 	// Set content type and return success message
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	// w.Write([]byte("Blog Created"))
-
-	// Yes! When GORM's Create(&body) method is executed,
-	// it inserts the new blog entry into the database
-	// and updates the body variable with any fields that the database automatically generates
-	// (such as ID, timestamps, default values, etc.)
-
-	// The request body (req.Body) is parsed into body:
-	// The blog entry is created in the database:
-	// GORM inserts the record.
-	// After insertion, GORM retrieves the newly created row from the database.
-	// body is updated with database-generated fields like:
-	// ID (if it's an auto-incrementing primary key)
-	// CreatedAt (if GORM is managing timestamps)
-	// Any default values from the database schema.
-
-	// Now, the response contains both the original data and any new fields set by the DB.
 
 	json.NewEncoder(w).Encode(&body)
 
