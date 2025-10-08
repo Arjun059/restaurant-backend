@@ -28,39 +28,6 @@ type DishHandler struct {
 	DB *gorm.DB;
 }
 
-
-// func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
-// 	defer r.Body.Close()
-
-	// var body models.Dish
-
-	// // Decode the request body and handle any potential errors
-	// if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-	// 	utils.WriteErrorResponse(w, fmt.Sprintf("Invalid JSON payload: %v", err), http.StatusBadRequest)
-	// 	return
-	// }
-
-	// fmt.Println("Add Dish")
-	// fmt.Printf("%v", body)
-  // if err := utils.ValidateDish(body); err != nil {
-	// 	fmt.Printf("%v error in validation ", err)
-	// 	utils.WriteErrorResponse(w, fmt.Sprintf("Validation Failed: %v", err) , http.StatusBadRequest)
-	// 	return
-	// }
-
-	// if err := dh.DB.Create(&body).Error; err != nil {
-	// 	fmt.Println("Database error:", err) // Log the actual error for debugging
-	// 	utils.WriteErrorResponse(w, "Error occur on Add Dish", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// fmt.Println("hit before success reponse")
-
-	// // Set content type and return success message
-	// w.Header().Set("Content-Type", "text/plain")
-	// utils.WriteSuccessResponse(w, "Dish Added Successfully", 201, nil)
-// }
-
 func (dh *DishHandler) AddDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -87,7 +54,6 @@ for  _, fileHeader := range files {
 		return
 	}
 
-	// Use a local variable for each loop to avoid defer leaks
 	func(file multipart.File) {
 		defer file.Close()
 
