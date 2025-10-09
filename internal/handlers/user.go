@@ -95,28 +95,37 @@ func (h *UserHandler) InviteUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 
-	var body models.User
+	type ReqBody struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	var body ReqBody
 	json.NewDecoder(r.Body).Decode(&body)
 
 	var user models.User
 	log.Printf("Decoded body: %+v\n", body)
 
+	print(body.Email, "body email")
+
 	if e := h.DB.Where("email = ?", body.Email).Preload("Restaurant").First(&user).Error; e != nil {
 		log.Printf("Decoded body: %+v\n", e)
 	
-		utils.WriteErrorResponse(w, "User not found", http.StatusNotFound)
+		utils.WriteErrorResponse(w, "User not found", http.StatusUnauthorized)
 		return 
 
 	}
 
 	if user.Email != body.Email || !utils.CheckPasswordHash(body.Password, user.Password) {
-		utils.WriteErrorResponse(w, "Invalid credential", http.StatusNotFound)
+		print("email pass not match")
+		utils.WriteErrorResponse(w, "Invalid credential", http.StatusUnauthorized)
 		return
 	}
 
 	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID, user.Restaurant.URLPath)
 	if err != nil {
-		utils.WriteErrorResponse(w, "Internal server error", http.StatusNotFound)
+		fmt.Printf("error from the token string %+v", err)
+		utils.WriteErrorResponse(w, "Internal server error", http.StatusUnauthorized)
 		return
 	}
 

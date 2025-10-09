@@ -22,7 +22,7 @@ func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, 
 			"exp":        time.Now().Add(time.Hour * 24).Unix(),
 		})
 
-	tokenString, err := token.SignedString(secretKey)
+	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, 
 
 func VerifyToken(tokenString string) (map[string]interface{}, error ) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
