@@ -43,6 +43,8 @@ func main() {
 	userHandler := &handlers.UserHandler{DB: db}
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/qr/generate", restaurantHandler.GenerateQr).Methods("GET")
 	
 	r.HandleFunc("/user/get/{id}", userHandler.GetUser).Methods("GET")
 	r.HandleFunc("/user/update/{id}", userHandler.UpdateUser).Methods("PUT")

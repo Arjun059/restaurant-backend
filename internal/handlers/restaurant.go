@@ -155,3 +155,14 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 	json.NewEncoder(w).Encode(reqBody)
 
 }
+
+func (h *RestaurantHandler) GenerateQr(w http.ResponseWriter, r *http.Request) {
+
+	barCodePath, _  := utils.GenerateQrAndUploadToCloud("http://test.com", "/test")
+
+ type Res	struct {
+	success string
+ }
+
+ utils.WriteSuccessResponse(w, barCodePath, 	http.StatusOK, Res{success: "success"})
+}
