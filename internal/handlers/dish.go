@@ -221,20 +221,23 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(mux.Vars(r)["id"])
-	if err != nil {
-		fmt.Println("error not get id", err)
-		http.Error(w, "Id Invalid", http.StatusBadRequest)
-		return
-	}
-	if err := dh.DB.Delete(&models.Blog{}, id).Error; err != nil {
-		fmt.Println("error not get id", err)
-		http.Error(w, "Id Invalid", http.StatusBadRequest)
+	id := mux.Vars(r)["id"]
+
+	// check user can only deleted his own resource
+  restInfo := utils.GetAuthContext(r)
+
+	if err := dh.DB.
+    Where("restaurant_id = ?", restInfo.RestaurantID).
+    Where("ID = ?", id).
+    Delete(&models.Dish{}).Error; err != nil {
+	  utils.WriteErrorResponse(w, "Error occur on dish delete", http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(200)
-	fmt.Fprint(w, "Blog Delete Successfully")
+	type DishDeleteRes struct {
+		success bool
+	}
+	utils.WriteSuccessResponse(w, "Dish deleted successfully", http.StatusOK, DishDeleteRes{true})
 }
 
 func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request) {
