@@ -67,7 +67,6 @@ func main() {
 	r.HandleFunc("/blog/list", utils.WithAuth(blogHandler.ListBlogs)).Methods("GET")
 
 	r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
-	// r.HandleFunc("/admin/dashboard/dish/add", dishHandler.AddDish).Methods("POST")
 	r.HandleFunc("/admin/dashboard/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
 	r.HandleFunc("/admin/dashboard/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
 	r.HandleFunc("/admin/dashboard/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")

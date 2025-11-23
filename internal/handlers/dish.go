@@ -7,7 +7,6 @@ import (
 	"restaurant/internal/models"
 	"io"
 	"net/http"
-	"strconv"
 	utils "restaurant/internal/utils"
 
 	"github.com/gorilla/mux"
@@ -142,33 +141,106 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var rVars = mux.Vars(r)
-	id, err := strconv.Atoi(rVars["id"])
+	id := rVars["id"]
 
-	if err != nil {
-		http.Error(w, "Id is invalid", http.StatusBadRequest)
-		return
-	}
-
+	restInfo := utils.GetAuthContext(r)
 	var body models.Dish
-	// Decode the request body and handle any potential errors
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+
+
+	// Parse multipart form (allow up to 50MB like in AddDish)
+	if err := r.ParseMultipartForm(50 << 20); err != nil {
+		fmt.Println("Error parsing multipart form:", err)
+		http.Error(w, "Error parsing multipart form data", http.StatusBadRequest)
 		return
 	}
 
-	if err := dh.DB.Model(&models.Dish{}).Where("ID = ? ", id).Updates(&body).Error; err != nil {
-		fmt.Println("this is update error ", err)
+	// Handle categories (array) similar to AddDish
+	categories := r.Form["categories"]
+	if len(categories) > 0 {
+		categoryJSON, err := json.Marshal(categories)
+		if err == nil {
+			body.Categories = datatypes.JSON(categoryJSON)
+		}
+	}
+
+	// Remove categories from the form values so decoder doesn't choke
+	if r.MultipartForm != nil {
+		delete(r.MultipartForm.Value, "categories")
+	}
+
+	// Decode remaining form values into Dish struct
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	if err := decoder.Decode(&body, r.MultipartForm.Value); err != nil {
+		fmt.Printf("Error decoding form: %v\n", err)
+		http.Error(w, "Error decoding form data", http.StatusBadRequest)
+		return
+	}
+
+	// Handle uploaded images if present
+	filesMeta := []models.FileMeta{}
+	if r.MultipartForm != nil {
+		files := r.MultipartForm.File["images"]
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			if err != nil {
+				http.Error(w, "Failed to open file: "+fileHeader.Filename, http.StatusBadRequest)
+				return
+			}
+
+			func(file multipart.File, fileHeader *multipart.FileHeader) {
+				defer file.Close()
+
+				ext := filepath.Ext(fileHeader.Filename)
+				name := strings.TrimSuffix(fileHeader.Filename, ext)
+				folder := restInfo.RestaurantID.String()
+				uploadedFileName := fmt.Sprintf("%s_%s", name, uuid.New().String())
+
+				uploadedURL, err := utils.UploadFileToCloud(file, uploadedFileName, folder)
+				if err != nil {
+					fmt.Printf("Failed to upload to Supabase: %v\n", err)
+					// don't abort entire request for an upload error; surface as server error
+					http.Error(w, "Failed to upload to Supabase: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				filesMeta = append(filesMeta, models.FileMeta{
+					Name:   fmt.Sprintf("%s%s", uploadedFileName, ext),
+					Folder: folder,
+					Url:    uploadedURL,
+				})
+			}(file, fileHeader)
+		}
+	}
+
+	if len(filesMeta) > 0 {
+		if imagesJson, err := json.Marshal(filesMeta); err == nil {
+			body.Images = datatypes.JSON(imagesJson)
+		}
+	}
+
+	// Ensure restaurant scoping and user info are preserved (don't allow changing owner)
+	body.RestaurantID = restInfo.RestaurantID
+	body.UserID = restInfo.UserID
+
+	// Perform update scoped to the restaurant and id
+	if err := dh.DB.
+		Model(&models.Dish{}).
+		Where("id = ?", id).
+		Where("restaurant_id = ?", restInfo.RestaurantID).
+		Updates(&body).Error; err != nil {
+		fmt.Println("update error:", err)
 		http.Error(w, "Error Occur", http.StatusInternalServerError)
 		return
 	}
 
 	var updatedProduct models.Dish
-	if err := dh.DB.First(updatedProduct, id).Error; err != nil {
+	// Use pointer and scope retrieval to restaurant
+	if err := dh.DB.Where("id = ?", id).Where("restaurant_id = ?", restInfo.RestaurantID).First(&updatedProduct).Error; err != nil {
 		http.Error(w, "Error Occur on update dish", http.StatusBadRequest)
 		return
 	}
 
-	// Set content type and return success message
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&updatedProduct)
 
