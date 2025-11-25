@@ -146,6 +146,18 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	restInfo := utils.GetAuthContext(r)
 	var body models.Dish
 
+	// Load current dish from DB to compare existing images later
+	var currentDish models.Dish
+	if err := dh.DB.Where("id = ?", id).Where("restaurant_id = ?", restInfo.RestaurantID).First(&currentDish).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "dish not found", http.StatusBadRequest)
+			return
+		}
+		fmt.Printf("error fetching current dish: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 
 	// Parse multipart form (allow up to 50MB like in AddDish)
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
@@ -163,9 +175,42 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Remove categories from the form values so decoder doesn't choke
+	// ImageInfo describes stored/uploaded image metadata
+	type ImageInfo struct {
+		Url    string `json:"url"`
+		Folder string `json:"folder"`
+		Name   string `json:"name"`
+	}
+
+	// Handle existingImages field (client may send JSON array/object or plain strings)
+	existingImagesSlice := r.Form["existingImages"]
+	existing := make([]ImageInfo, 0)
+	if len(existingImagesSlice) > 0 {
+		for _, v := range existingImagesSlice {
+			// v might be a JSON array, a JSON object, or a plain string
+			// Try JSON array first
+			var arr []ImageInfo
+			if err := json.Unmarshal([]byte(v), &arr); err == nil {
+				existing = append(existing, arr...)
+				continue
+			}
+
+			// Try single JSON object
+			var obj ImageInfo
+			if err := json.Unmarshal([]byte(v), &obj); err == nil {
+				existing = append(existing, obj)
+				continue
+			}
+
+			// Fallback: treat as plain URL string
+			existing = append(existing, ImageInfo{Url: v})
+		}
+	}
+
+	// Remove categories and uploaded images from the form values so decoder doesn't choke
 	if r.MultipartForm != nil {
 		delete(r.MultipartForm.Value, "categories")
+		delete(r.MultipartForm.Value, "existingImages")
 	}
 
 	// Decode remaining form values into Dish struct
@@ -213,11 +258,64 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var incoming []ImageInfo
 	if len(filesMeta) > 0 {
 		if imagesJson, err := json.Marshal(filesMeta); err == nil {
-			body.Images = datatypes.JSON(imagesJson)
+		
+			if err := json.Unmarshal(imagesJson, &incoming); err != nil {
+				fmt.Printf("Error unmarshaling incoming images: %v\n", err)
+				http.Error(w, "Error processing uploaded images", http.StatusBadRequest)
+				return
+			}
 		}
 	}
+
+	merged := append(existing, incoming...)
+	mergedJSON, err := json.Marshal(merged)
+
+	if err != nil {
+		fmt.Printf("Error marshaling merged images: %v\n", err)
+		http.Error(w, "Error processing images", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("Total images len", len(merged))
+	body.Images = datatypes.JSON(mergedJSON)
+
+		// Delete images that exist in DB but are not present in the
+		// client-provided `existing` list. Build sets of retained URLs
+		retained := map[string]bool{}
+		for _, m := range existing {
+				retained[m.Name] = true
+		}
+
+
+		var currentFiles []models.FileMeta
+		if len(currentDish.Images) > 0 {
+			if err := json.Unmarshal(currentDish.Images, &currentFiles); err != nil {
+				fmt.Printf("Error unmarshaling current dish images: %v\n", err)
+			}
+		}
+
+		fmt.Printf("this is current file %+v", currentFiles)
+
+		for _, cf := range currentFiles {
+			// decide whether this file should be deleted: it's deleted
+			// only when it's not present in the client's existing list
+			// (neither by URL nor by name)
+			kept := false
+			if cf.Url != "" && retained[cf.Name] {
+				kept = true
+			}
+			if !kept {
+				fmt.Printf("this file is going to delete %+v", cf)
+				if err := utils.DeleteFileFromCloud(cf.Name, cf.Folder); err != nil {
+					fmt.Printf("failed to delete cloud file %s/%s: %v\n",cf.Name, cf.Folder,  err)
+				} else {
+					fmt.Printf("deleted cloud file %s/%s\n", cf.Name, cf.Folder)
+				}
+			}
+		}
 
 	// Ensure restaurant scoping and user info are preserved (don't allow changing owner)
 	body.RestaurantID = restInfo.RestaurantID
