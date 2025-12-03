@@ -32,13 +32,11 @@ func main() {
 	// Auto-migrate  schema's
 	db.AutoMigrate(
 		&models.Restaurant{},
-		&models.Blog{},
 		&models.Dish{},
 		&models.User{},
 	)
 
 	restaurantHandler := &handlers.RestaurantHandler{DB: db}
-	blogHandler := &handlers.BlogHandler{DB: db}
 	dishHandler := &handlers.DishHandler{DB: db}
 	userHandler := &handlers.UserHandler{DB: db}
 
@@ -59,13 +57,6 @@ func main() {
 	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateRestaurant).Methods("PUT")
 
 	r.HandleFunc("/restaurant/register", restaurantHandler.CreateRestaurantAccount).Methods("POST")
-
-	r.HandleFunc("/blog/create", utils.WithAuth(blogHandler.CreateBlog)).Methods("POST")
-	r.HandleFunc("/blog/get/{id}", utils.WithAuth(blogHandler.GetBlog)).Methods("GET")
-	r.HandleFunc("/blog/update/{id}", utils.WithAuth(blogHandler.UpdateBlog)).Methods("PUT")
-	r.HandleFunc("/blog/delete/{id}", utils.WithAuth(blogHandler.DeleteBlog)).Methods("DELETE")
-	r.HandleFunc("/blog/list", utils.WithAuth(blogHandler.ListBlogs)).Methods("GET")
-
 	r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
 	r.HandleFunc("/admin/dashboard/dish/update/{id}", utils.WithAuth(dishHandler.UpdateDish)).Methods("PUT")
 	r.HandleFunc("/admin/dashboard/dish/get/{id}", utils.WithAuth(dishHandler.GetDish)).Methods("GET")
@@ -87,9 +78,6 @@ func main() {
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, Gorilla Mux!"))
 	})
-
-	// cron job for ping service
-	utils.PreventSleepCron()
 	
 	allowedOrigins := muxHandler.AllowedOrigins([]string{"*"})
 	allowedMethods := muxHandler.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})

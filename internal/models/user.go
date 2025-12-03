@@ -14,7 +14,7 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 
-	Role string `json:"role"` // New field to define employee role (e.g., "owner", "manager", "editor")
+	Role string `json:"role"` // New field to define employee role (e.g., "owner", "manager", "editor", "super-admin")
 
 	RestaurantID  uuid.UUID `json:"restaurantId"`
 	Restaurant   Restaurant `json:"restaurant" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
