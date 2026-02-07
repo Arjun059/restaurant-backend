@@ -18,21 +18,12 @@ import (
 func main() {
 	cwd, _ := os.Getwd()
 
-	fmt.Println("this is app env --->", os.Getenv("APP_ENV"))
-	fmt.Println(" <--- end app env")
+	env := os.Getenv("APP_ENV")
+	fmt.Println("APP_ENV:", env)
 
-	if os.Getenv("APP_ENV") == "prod" {
-		  fmt.Println("Production Enviorment")
-			err := godotenv.Load(path.Join(cwd, "config/.env.prod"))
-			if err != nil {
-					log.Fatalf("Failed to load env: %v", err)
-			}
-	} else if os.Getenv("APP_ENV") == "dev" {
-	   	fmt.Println("Development Enviorment")
-			err := godotenv.Load(path.Join(cwd, "config/.env.prod"))
-			if err != nil {
-					log.Fatalf("Failed to load env: %v", err)
-			}
+	err := godotenv.Load(path.Join(cwd, "config/.env." + env))
+	if err != nil {
+			log.Fatalf("Failed to load env: %v", err)
 	}
 	
 	db, err := utils.InitDB()
@@ -64,7 +55,6 @@ func main() {
 
 	r.HandleFunc("/restaurant/get/{id}", restaurantHandler.GetRestaurant).Methods("GET")
 	r.HandleFunc("/restaurant/get/url/{url}", restaurantHandler.GetRestaurantByUrl).Methods("GET")
-	r.HandleFunc("/restaurant/update/{id}", restaurantHandler.UpdateRestaurant).Methods("PUT")
 
 	r.HandleFunc("/restaurant/register", restaurantHandler.CreateRestaurantAccount).Methods("POST")
 	r.HandleFunc("/admin/dashboard/dish/add", utils.WithAuth(dishHandler.AddDish)).Methods("POST")
@@ -73,6 +63,8 @@ func main() {
 	r.HandleFunc("/admin/dashboard/dish/delete/{id}", utils.WithAuth(dishHandler.DeleteDish)).Methods("DELETE")
 	r.HandleFunc("/admin/dashboard/dish/list", dishHandler.ListDishes).Methods("GET")
 	r.HandleFunc("/admin/dashboard/dish/image/upload", dishHandler.ImageUploadHandler).Methods("POST")
+	r.HandleFunc("/admin/dashboard/restaurant/update", restaurantHandler.UpdateRestaurant).Methods("PUT")
+
 
 	r.HandleFunc("/dishes/{restaurantID}", dishHandler.ListDishes).Methods("GET")
 

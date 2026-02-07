@@ -72,8 +72,49 @@ func (h *RestaurantHandler) GetRestaurantByUrl(w http.ResponseWriter, r *http.Re
 }
 
 func (h *RestaurantHandler) UpdateRestaurant(w http.ResponseWriter, r *http.Request) {
+
+	type RestaurantUpdatedData struct {
+		Name    *string `json:"name"`
+		Address *string `json:"address"`
+	}
+
+	var reqBody RestaurantUpdatedData
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		utils.WriteErrorResponse(w, "Body Not Parsed", http.StatusBadRequest)
+		return
+	}
+
+	authContext := utils.GetAuthContext(r)
+	restaurantID := authContext.RestaurantID.String()
+
+	updates := make(map[string]interface{})
+
+	if reqBody.Name != nil {
+		updates["name"] = *reqBody.Name
+	}
+
+	if reqBody.Address != nil {
+		updates["address"] = *reqBody.Address
+	}
+
+	if len(updates) == 0 {
+		utils.WriteErrorResponse(w, "No fields to update", http.StatusBadRequest)
+		return
+	}
+
+	// example DB update (pseudo)
+	err := h.DB.Model(&models.Restaurant{}).
+	    Where("id = ?", restaurantID).
+	    Updates(updates).Error
+	
+	if err != nil {
+		utils.WriteErrorResponse(w, "!Error occur on update restaurant info", http.StatusBadRequest)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "User Updated")
+	fmt.Fprint(w, "Restaurant Updated")
 }
 
 func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *http.Request) {
