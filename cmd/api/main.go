@@ -17,14 +17,24 @@ import (
 
 func main() {
 	cwd, _ := os.Getwd()
-	
-	if os.Getenv("APP_ENV") != "production" {
-			err := godotenv.Load(path.Join(cwd, ".env"))
+
+	fmt.Println("this is app env --->", os.Getenv("APP_ENV"))
+	fmt.Println(" <--- end app env")
+
+	if os.Getenv("APP_ENV") == "prod" {
+		  fmt.Println("Production Enviorment")
+			err := godotenv.Load(path.Join(cwd, "config/.env.prod"))
+			if err != nil {
+					log.Fatalf("Failed to load env: %v", err)
+			}
+	} else if os.Getenv("APP_ENV") == "dev" {
+	   	fmt.Println("Development Enviorment")
+			err := godotenv.Load(path.Join(cwd, "config/.env.prod"))
 			if err != nil {
 					log.Fatalf("Failed to load env: %v", err)
 			}
 	}
-
+	
 	db, err := utils.InitDB()
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
