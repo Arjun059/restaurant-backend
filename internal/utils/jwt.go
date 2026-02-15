@@ -12,13 +12,14 @@ import (
 
 var secretKey = os.Getenv("JWT_SECRET")
 
-func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, restaurant_url_path string) (string, error) {
+func CreateToken( user_id uuid.UUID, user_email string,restaurant_id uuid.UUID, restaurant_url_path string, is_restaurant_verified bool) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"userEmail": user_email,
 			"userId":    user_id,
 			"restaurantId": restaurant_id,
 			"restaurantURLPath": restaurant_url_path,
+			"isRestaurantVerified": is_restaurant_verified,
 			"exp":        time.Now().Add(time.Hour * 24).Unix(),
 		})
 

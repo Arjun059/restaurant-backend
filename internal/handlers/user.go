@@ -111,9 +111,8 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 	if e := h.DB.Where("email = ?", body.Email).Preload("Restaurant").First(&user).Error; e != nil {
 		log.Printf("Decoded body: %+v\n", e)
 	
-		utils.WriteErrorResponse(w, "User not found", http.StatusUnauthorized)
+		utils.WriteErrorResponse(w, "Invalid credential", http.StatusUnauthorized)
 		return 
-
 	}
 
 	if user.Email != body.Email || !utils.CheckPasswordHash(body.Password, user.Password) {
@@ -122,7 +121,12 @@ func (h *UserHandler) SigninUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID, user.Restaurant.URLPath)
+	if user.Restaurant.IsVerified == false {
+		utils.WriteErrorResponse(w, "Please contact to your admin as Restaurant is not verified yet!", http.StatusBadRequest)
+		return
+	}
+
+	tokenString, err := utils.CreateToken(user.ID, user.Email, user.Restaurant.ID, user.Restaurant.URLPath, user.Restaurant.IsVerified)
 	if err != nil {
 		fmt.Printf("error from the token string %+v", err)
 		utils.WriteErrorResponse(w, "Internal server error", http.StatusUnauthorized)

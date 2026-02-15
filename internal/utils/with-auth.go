@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type contextKey string
 
 const (
@@ -15,6 +14,7 @@ const (
 	userEmailKey         contextKey = "userEmail"
 	restaurantIDKey      contextKey = "restaurantID"
 	restaurantURLPathKey contextKey = "restaurantURLPath"
+	isRestaurantVerifiedKey contextKey = "isRestaurantVerified"
 )
 
 // Inline middleware example (logging)
@@ -53,12 +53,14 @@ func WithAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		userEmail := fmt.Sprintf("%v", tokenClaims["userEmail"])
 		restaurantURLPath := fmt.Sprintf("%v", tokenClaims["restaurantURLPath"])
+		isRestaurantVerified := tokenClaims["isRestaurantVerified"].(bool)
 
 		// Set into context
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		ctx = context.WithValue(ctx, userEmailKey, userEmail)
 		ctx = context.WithValue(ctx, restaurantIDKey, restaurantID)
 		ctx = context.WithValue(ctx, restaurantURLPathKey, restaurantURLPath)
+		ctx = context.WithValue(ctx, isRestaurantVerifiedKey, isRestaurantVerified)
 
 		next(w, r.WithContext(ctx))
 	}
@@ -69,6 +71,7 @@ type AuthContext struct {
 	UserEmail         string
 	RestaurantID      uuid.UUID
 	RestaurantURLPath string
+	IsRestaurantVerified  bool
 }
 
 func GetAuthContext(r *http.Request) AuthContext {
@@ -77,6 +80,7 @@ func GetAuthContext(r *http.Request) AuthContext {
 		UserEmail:         getStringValue(r.Context(), userEmailKey),
 		RestaurantID:      getUUIDValue(r.Context(), restaurantIDKey),
 		RestaurantURLPath: getStringValue(r.Context(), restaurantURLPathKey),
+		IsRestaurantVerified: getBoolValue(r.Context(), isRestaurantVerifiedKey),
 	}
 }
 
@@ -94,3 +98,9 @@ func getUUIDValue(ctx context.Context, key contextKey) uuid.UUID {
 	return uuid.Nil
 }
 
+func getBoolValue(ctx context.Context, key contextKey) bool {
+	if val, ok := ctx.Value(key).(bool); ok {
+		return val
+	}
+	return false
+}

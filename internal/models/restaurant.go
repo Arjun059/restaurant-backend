@@ -22,4 +22,6 @@ type Restaurant struct {
   CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
   UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
   DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+
+  IsVerified bool `json:"isVerified" gorm:"default:false"`
 }
