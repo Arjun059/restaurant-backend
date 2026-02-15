@@ -22,7 +22,6 @@ import (
 	"mime/multipart"
 )
 
-
 type DishHandler struct {
 	DB *gorm.DB;
 }
@@ -370,8 +369,10 @@ func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 }
 
 func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
-	var products []models.Dish
+	var dishes []models.Dish
 	// .Order("created_at desc")
+	
+	fmt.Println("Hit request")
 
 	var rVars = mux.Vars(r)
 	restaurantID, err := uuid.Parse(rVars["restaurantID"])	
@@ -379,15 +380,60 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 			http.Error(w, "Restaurant ID is required", http.StatusBadRequest)
+			return
 	}
 
-	if err := dh.DB.Where("restaurant_id = ?", restaurantID).Order("created_at desc").Find(&products).Error; err != nil {
+	if err := dh.DB.Where("restaurant_id = ?", restaurantID).Order("created_at desc").Find(&dishes).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}
 
+  // modify image url
+	for i := range dishes {
+
+		if len(dishes[i].Images) == 0 {
+			continue
+		}
+
+		var images []map[string]interface{}
+
+		// 1️⃣ Unmarshal JSON
+		if err := json.Unmarshal(dishes[i].Images, &images); err != nil {
+			continue
+		}
+
+		// 2️⃣ Modify URLs
+		for j := range images {
+			if url, ok := images[j]["url"].(string); ok {
+				smallUrl := strings.Replace(
+					url,
+					"/image/upload/",
+					"/image/upload/w_300,c_limit,q_auto,f_auto/",
+					1,
+				);
+				mediumUrl := strings.Replace(
+					url,
+					"/image/upload/",
+					"/image/upload/w_900,c_limit,q_auto,f_auto/",
+					1,
+				)
+				images[j]["originalUrl"] = url
+				images[j]["smallUrl"] = smallUrl
+				images[j]["mediumUrl"] = mediumUrl
+			}
+		}
+
+		// 3️⃣ Marshal back to JSON
+		updatedJSON, err := json.Marshal(images)
+		if err != nil {
+			continue
+		}
+
+		dishes[i].Images = updatedJSON
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	utils.WriteSuccessResponse(w, "success", http.StatusOK, products)
+	utils.WriteSuccessResponse(w, "success", http.StatusOK, dishes)
 }
 
 func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {

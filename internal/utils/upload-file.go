@@ -35,11 +35,6 @@ func UploadFileToCloud(file io.Reader, fileName string, folder string) (string, 
 
 // DeleteFileFromCloud logs a deletion request. Implement real deletion
 // using the Cloudinary SDK if desired.
-// func DeleteFileFromCloud(folder string, storedName string) error {
-// 	fmt.Printf("Delete requested for cloud file: %s (folder=%s)\n", storedName, folder)
-// 	return nil
-// }
-
 func DeleteFileFromCloud(fileName, folder string) error {
 	cld, err := cloudinary.NewFromURL(os.Getenv("CLOUDINARY_URL"))
 	if err != nil {
