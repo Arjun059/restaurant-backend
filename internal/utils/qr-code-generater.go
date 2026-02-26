@@ -1,41 +1,75 @@
 package utils
 
 import (
-	qrcode "github.com/skip2/go-qrcode"
 	"bytes"
-	"log"
 	"fmt"
-	// "github.com/google/uuid"
+	"image"
+	imagepng "image/png"
+
+	"github.com/disintegration/imaging"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 var qrCodeFolder = "qr-codes"
 
 func GenerateQrAndUploadToCloud(restaurantURL string, restaurantURLPath string) (string, error) {
-	// var qrCodeFileName = "abc.png"
-	// err := qrcode.WriteFile("https://example.com", qrcode.Medium, 256, qrCodeFileName)
-	// if err != nil {
-	// 	return "", err
-	// }
 
-	// Step 1: Generate QR code as PNG byte slice
-	png, err := qrcode.Encode(restaurantURL, qrcode.Medium, 256)
+	// 1️⃣ Generate QR PNG bytes
+	qrBytes, err := qrcode.Encode(restaurantURL, qrcode.Medium, 512)
 	if err != nil {
-		log.Fatal("Error generating QR code:", err)
-	}
-
-	// Step 2: Wrap it in bytes.Reader
-	pngReader := bytes.NewReader(png)
-
-	filename := restaurantURLPath
-
-		// Step 3: Upload
-	uploadedURL, err := UploadFileToCloud(pngReader, filename, qrCodeFolder)
-	if err != nil {
-		log.Fatal("Upload failed:", err)
 		return "", err
 	}
-	
-	fmt.Println("QR code uploaded to:", uploadedURL)
+
+	// 2️⃣ Decode QR bytes into image.Image
+	qrImage, err := imaging.Decode(bytes.NewReader(qrBytes))
+	if err != nil {
+		return "", err
+	}
+
+	// 3️⃣ Open Poster Background
+	posterPath := "public/assets/qr-background.png"
+	posterImg, err := imaging.Open(posterPath)
+	if err != nil {
+		return "", err
+	}
+
+	// 4️⃣ Resize QR
+	qrSize := 566
+	qrResized := imaging.Resize(qrImage, qrSize, qrSize, imaging.Lanczos)
+
+	// 5️⃣ Calculate center
+	bounds := posterImg.Bounds()
+	centerX := (bounds.Dx() - qrSize) / 2
+	centerY := (bounds.Dy() - qrSize) / 2 - 42
+	// centerY := 550 // adjust as needed
+
+	// 6️⃣ Overlay QR onto poster
+	finalImage := imaging.Overlay(
+		posterImg,
+		qrResized,
+		image.Pt(centerX, centerY),
+		1.0,
+	)
+
+	// 7️⃣ Encode final image to memory
+	var buf bytes.Buffer
+	err = imagepng.Encode(&buf, finalImage)
+	if err != nil {
+		return "", err
+	}
+
+	// 8️⃣ Upload FINAL poster (not raw QR)
+	filename := restaurantURLPath + ".png"
+
+	uploadedURL, err := UploadFileToCloud(
+		bytes.NewReader(buf.Bytes()),
+		filename,
+		qrCodeFolder,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Println("Poster uploaded to:", uploadedURL)
 	return uploadedURL, nil
 }
-

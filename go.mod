@@ -26,6 +26,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/creasty/defaults v1.7.0 // indirect
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
