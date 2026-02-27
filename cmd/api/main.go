@@ -91,6 +91,6 @@ func main() {
 	fmt.Println("Server running at:", fmt.Sprintf("%s:%s", host, port))
 
 	loggedRouter := muxHandler.LoggingHandler(log.Writer(), wrappedHandler)
-	http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), loggedRouter)
+	http.ListenAndServe(fmt.Sprintf(":%s", port), loggedRouter)
 
 }

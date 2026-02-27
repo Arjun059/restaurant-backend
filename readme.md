@@ -1,6 +1,9 @@
 <!-- for build api -->
 go build -o bin/restaurant ./cmd/api
 
+<!-- for cross platform build [run at gitbash]-->
+GOOS=linux GOARCH=amd64 go build -o restaurant ./cmd/api
+
 <!-- for run api with prod -->
 APP_ENV=dev ./bin/restaurant
 
