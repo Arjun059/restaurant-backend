@@ -184,7 +184,7 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 
   siteUrl := os.Getenv("SITE_URL")
 	qrURL := fmt.Sprintf("%s/%s/%s/%s", siteUrl, "c", reqBody.Restaurant.URLPath, "home")
-  uploadedURL, _ :=	utils.GenerateQrAndUploadToCloud(qrURL, reqBody.Restaurant.URLPath)
+  uploadedURL, _ :=	utils.GenerateQrAndUploadToCloud(qrURL, reqBody.Restaurant.URLPath, reqBody.Restaurant.Name)
 
 	if err := h.DB.Model(&reqBody.Restaurant).Where("id = ?", reqBody.Restaurant.ID).Update("QrCodeURL", uploadedURL).Error; err != nil {
 		fmt.Println("error occur on create qrcode")
@@ -198,12 +198,13 @@ func (h *RestaurantHandler) CreateRestaurantAccount(w http.ResponseWriter, r *ht
 }
 
 func (h *RestaurantHandler) GenerateQr(w http.ResponseWriter, r *http.Request) {
+	type Res	struct {
+		success string
+	}
+	utils.WriteSuccessResponse(w, "Hello World", 	http.StatusOK, Res{success: "success"})
+  return
 
-	barCodePath, _  := utils.GenerateQrAndUploadToCloud("http://test.com", "/test")
+// barCodePath, _  := utils.GenerateQrAndUploadToCloud("https://www.mealwala.com/c/bbc74389-6b35-4913-a19a-001dac82bc74/dishes", "/bbc74389-6b35-4913-a19a-001dac82bc74", "Cafe Dire Surveillance")
+//  utils.WriteSuccessResponse(w, barCodePath, 	http.StatusOK, Res{success: "success"})
 
- type Res	struct {
-	success string
- }
-
- utils.WriteSuccessResponse(w, barCodePath, 	http.StatusOK, Res{success: "success"})
 }
