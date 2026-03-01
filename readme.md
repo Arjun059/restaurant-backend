@@ -9,3 +9,7 @@ APP_ENV=dev ./bin/restaurant
 
 <!-- for run without making build -->
 APP_ENV=dev go run ./cmd/api
+
+<!-- droplet restart go server service linux cmd-->
+systemctl restart restaurant.service
+systemctl status restaurant.service

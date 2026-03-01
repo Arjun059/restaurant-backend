@@ -204,7 +204,7 @@ func (h *RestaurantHandler) GenerateQr(w http.ResponseWriter, r *http.Request) {
 	utils.WriteSuccessResponse(w, "Hello World", 	http.StatusOK, Res{success: "success"})
   return
 
-// barCodePath, _  := utils.GenerateQrAndUploadToCloud("https://www.mealwala.com/c/bbc74389-6b35-4913-a19a-001dac82bc74/dishes", "/bbc74389-6b35-4913-a19a-001dac82bc74", "Cafe Dire Surveillance")
+//  barCodePath, _  := utils.GenerateQrAndUploadToCloud("https://www.mealwala.com/c/bbc74389-6b35-4913-a19a-001dac82bc74/dishes", "/bbc74389-6b35-4913-a19a-001dac82bc74", "Cafe Dire Surveillance")
 //  utils.WriteSuccessResponse(w, barCodePath, 	http.StatusOK, Res{success: "success"})
 
 }
