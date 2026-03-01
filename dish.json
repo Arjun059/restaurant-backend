@@ -1,0 +1,55 @@
+[
+  {
+    "id": "a1b2c3d4-xxxx-xxxx-xxxx-111111111111",
+    "name": "Butter Chicken",
+    "description": "Creamy tomato gravy",
+    "categories": ["North Indian", "Chicken"],
+    "preparationTime": "20 mins",
+    "price": 0,                
+    "displayPrice": 0,
+    "serving": "",
+    "veg": false,
+    "rating": 4.5,
+    "bestSeller": true,
+    "images": [],
+    "userId": "user-uuid",
+    "restaurantId": "rest-uuid",
+    "createdAt": "2026-03-01T10:00:00Z",
+    "updatedAt": "2026-03-01T10:00:00Z",
+    "isAvailable": true,
+    "variants": [
+      {
+        "id": "v1-uuid",
+        "dish_id": "a1b2c3d4-xxxx-xxxx-xxxx-111111111111",
+        "name": "Half Plate",
+        "price": 250
+      },
+      {
+        "id": "v2-uuid",
+        "dish_id": "a1b2c3d4-xxxx-xxxx-xxxx-111111111111",
+        "name": "Full Plate",
+        "price": 450
+      }
+    ]
+  },
+  {
+    "id": "e5f6g7h8-xxxx-xxxx-xxxx-222222222222",
+    "name": "Plain Rice",
+    "description": "Steamed basmati rice",
+    "categories": ["Rice"],
+    "preparationTime": "10 mins",
+    "price": 80,
+    "displayPrice": 80,
+    "serving": "1 person",
+    "veg": true,
+    "rating": 4.0,
+    "bestSeller": false,
+    "images": [],
+    "userId": "user-uuid",
+    "restaurantId": "rest-uuid",
+    "createdAt": "2026-03-01T09:00:00Z",
+    "updatedAt": "2026-03-01T09:00:00Z",
+    "isAvailable": true,
+    "variants": []
+  }
+]

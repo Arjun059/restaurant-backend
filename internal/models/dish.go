@@ -22,8 +22,11 @@ type Dish struct {
 
 	PreparationTime string 		   `json:"preparationTime" schema:"preparationTime"`
 
-	Price         float64        `json:"price" validate:"required" schema:"price"`
+	// Price is only required when no variants are defined
+	Price         float64        `json:"price" validate:"omitempty,gt=0" schema:"price"`
 	DisplayPrice  float64        `json:"displayPrice" schema:"displayPrice"`
+
+  Serving     string            `json:"serving"` // e.g., "1 person", "2 people"
 
 	Veg bool                     `json:"veg" schema:"veg"`
 
@@ -37,8 +40,32 @@ type Dish struct {
 	
 	RestaurantID   uuid.UUID     `json:"restaurantId" schema:"restaurantId"`
 	Restaurant    Restaurant     `json:"restaurant" gorm:"foreignKey:RestaurantID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	
 	CreatedAt     time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt     gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+
+  IsAvailable bool             `json:"isAvailable" gorm:"default:true"`
+
+  Variants    []DishVariant    `json:"variants" gorm:"foreignKey:DishID;references:ID"`
+
 }
 
+type DishVariant struct {
+	ID          uuid.UUID      `json:"id" gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	DishID      uuid.UUID      `json:"dishId" gorm:"type:uuid;index"`
+	Dish        Dish           `json:"dish" gorm:"foreignKey:DishID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
+	
+	Name        string         `json:"name" validate:"required,min=2,max=50"`
+	Price       float64        `json:"price" validate:"required,gt=0"`
+	DisplayPrice float64       `json:"displayPrice"`
+	
+	Serving     string         `json:"serving"`     // e.g., "1 person", "2 people"
+	PreparationTime string     `json:"preparationTime"`
+	
+	IsAvailable bool           `json:"isAvailable" gorm:"default:true"`
+	
+	CreatedAt   time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt   gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+}

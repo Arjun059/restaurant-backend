@@ -92,8 +92,9 @@ for  _, fileHeader := range files {
 		http.Error(w, "Failed to process categories", http.StatusBadRequest)
 		return
 	} 
-	// Remove categories from the form so it doesn't interfere with decoding
+	// Remove categories and variants from the form so it doesn't interfere with decoding
   delete(r.MultipartForm.Value, "categories")
+  delete(r.MultipartForm.Value, "variants")
 
 	// Decode remaining fields into Dish model
 	var body models.Dish
@@ -104,6 +105,15 @@ for  _, fileHeader := range files {
 		fmt.Printf("Error decoding form: %v\n", err)
 		http.Error(w, "Error decoding form data", http.StatusBadRequest)
 		return
+	}
+
+	// parse variants from form if present, attach to body for validation
+	variantsJSON := r.Form.Get("variants")
+	if variantsJSON != "" {
+		var variants []models.DishVariant
+		if err := json.Unmarshal([]byte(variantsJSON), &variants); err == nil {
+			body.Variants = variants
+		}
 	}
 
 	// Validate the dish object
@@ -126,12 +136,43 @@ for  _, fileHeader := range files {
 	body.RestaurantID = authContext.RestaurantID;
 	body.UserID = authContext.UserID;
 
-	// Save to DB
-	if err := dh.DB.Create(&body).Error; err != nil {
-		fmt.Printf("Database error: %v\n", err)
-		utils.WriteErrorResponse(w, "Error occurred while saving dish", http.StatusBadRequest)
+	// Parse variants early for transaction
+	var variants []models.DishVariant
+	if variantsJSON != "" {
+		if err := json.Unmarshal([]byte(variantsJSON), &variants); err != nil {
+			fmt.Printf("Error parsing variants: %v\n", err)
+			utils.WriteErrorResponse(w, "Invalid variants format", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Save to DB with transaction - both dish and variants succeed or fail together
+	if err := dh.DB.Transaction(func(tx *gorm.DB) error {
+		// Create the dish
+		if err := tx.Create(&body).Error; err != nil {
+			fmt.Printf("Database error: %v\n", err)
+			return err
+		}
+
+		// Create variants if provided
+		if len(variants) > 0 {
+			for i := range variants {
+				variants[i].DishID = body.ID
+			}
+			if err := tx.CreateInBatches(variants, 100).Error; err != nil {
+				fmt.Printf("Error creating variants: %v\n", err)
+				return err
+			}
+		}
+
+		return nil
+	}).Error; err != nil {
+		utils.WriteErrorResponse(w, "Error occurred while saving dish and variants", http.StatusBadRequest)
 		return
 	}
+
+	// Reload dish with variants
+	dh.DB.Preload("Variants").First(&body, body.ID)
 
 	utils.WriteSuccessResponse(w, "Dish added successfully", http.StatusOK, body)
 }
@@ -156,7 +197,6 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-
 
 	// Parse multipart form (allow up to 50MB like in AddDish)
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
@@ -210,6 +250,7 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	if r.MultipartForm != nil {
 		delete(r.MultipartForm.Value, "categories")
 		delete(r.MultipartForm.Value, "existingImages")
+		delete(r.MultipartForm.Value, "variants")
 	}
 
 	// Decode remaining form values into Dish struct
@@ -219,6 +260,26 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Error decoding form: %v\n", err)
 		http.Error(w, "Error decoding form data", http.StatusBadRequest)
 		return
+	}
+
+	// perform simple validation: price positive if provided
+	if body.Price < 0 {
+		http.Error(w, "price must be positive", http.StatusBadRequest)
+		return
+	}
+
+	// validate incoming variants if present
+	variantsJSON := r.Form.Get("variants")
+	if variantsJSON != "" {
+		var variants []models.DishVariant
+		if err := json.Unmarshal([]byte(variantsJSON), &variants); err == nil {
+			for _, v := range variants {
+				if v.Price <= 0 {
+					http.Error(w, "all variants must have positive price", http.StatusBadRequest)
+					return
+				}
+			}
+		}
 	}
 
 	// Handle uploaded images if present
@@ -320,20 +381,83 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	body.RestaurantID = restInfo.RestaurantID
 	body.UserID = restInfo.UserID
 
-	// Perform update scoped to the restaurant and id
-	if err := dh.DB.
-		Model(&models.Dish{}).
-		Where("id = ?", id).
-		Where("restaurant_id = ?", restInfo.RestaurantID).
-		Updates(&body).Error; err != nil {
-		fmt.Println("update error:", err)
-		http.Error(w, "Error Occur", http.StatusInternalServerError)
+	// Parse variants update early
+	var incomingVariants []models.DishVariant
+	if variantsJSON != "" {
+		if err := json.Unmarshal([]byte(variantsJSON), &incomingVariants); err != nil {
+			fmt.Printf("Error parsing variants: %v\n", err)
+			http.Error(w, "Invalid variants format", http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Perform update with transaction - dish update and variant changes together
+	if err := dh.DB.Transaction(func(tx *gorm.DB) error {
+		// Update the dish
+		if err := tx.
+			Model(&models.Dish{}).
+			Where("id = ?", id).
+			Where("restaurant_id = ?", restInfo.RestaurantID).
+			Updates(&body).Error; err != nil {
+			fmt.Println("update error:", err)
+			return err
+		}
+
+		// Handle variants update if provided
+		if len(incomingVariants) > 0 {
+			// Get current variants from DB
+			var currentVariants []models.DishVariant
+			if err := tx.Where("dish_id = ?", id).Find(&currentVariants).Error; err != nil {
+				return err
+			}
+
+			// Create a map of incoming variant IDs for easy lookup
+			incomingIDs := make(map[string]bool)
+			for _, v := range incomingVariants {
+				if v.ID != uuid.Nil {
+					incomingIDs[v.ID.String()] = true
+				}
+			}
+
+			// Delete variants that are not in the incoming list
+			for _, current := range currentVariants {
+				if !incomingIDs[current.ID.String()] {
+					if err := tx.Delete(&current).Error; err != nil {
+						return err
+					}
+				}
+			}
+
+			// Create or update variants
+			for i := range incomingVariants {
+				incomingVariants[i].DishID = uuid.MustParse(id)
+				if incomingVariants[i].ID == uuid.Nil {
+					// New variant - create it
+					if err := tx.Create(&incomingVariants[i]).Error; err != nil {
+						fmt.Printf("Error creating variant: %v\n", err)
+						return err
+					}
+				} else {
+					// Existing variant - update it
+					if err := tx.Model(&models.DishVariant{}).
+						Where("id = ?", incomingVariants[i].ID).
+						Updates(&incomingVariants[i]).Error; err != nil {
+						fmt.Printf("Error updating variant: %v\n", err)
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	}).Error; err != nil {
+		utils.WriteErrorResponse(w, "Error occurred while updating dish and variants", http.StatusBadRequest)
 		return
 	}
 
 	var updatedProduct models.Dish
-	// Use pointer and scope retrieval to restaurant
-	if err := dh.DB.Where("id = ?", id).Where("restaurant_id = ?", restInfo.RestaurantID).First(&updatedProduct).Error; err != nil {
+	// Use pointer and scope retrieval to restaurant with preload variants
+	if err := dh.DB.Preload("Variants").Where("id = ?", id).Where("restaurant_id = ?", restInfo.RestaurantID).First(&updatedProduct).Error; err != nil {
 		http.Error(w, "Error Occur on update dish", http.StatusBadRequest)
 		return
 	}
@@ -354,7 +478,7 @@ func (dh *DishHandler) GetDish(w http.ResponseWriter, r *http.Request) {
 
 	var dish models.Dish
 
-	if err := dh.DB.First(&dish, id).Error; err != nil {
+	if err := dh.DB.Preload("Variants").First(&dish, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "dish not found", http.StatusBadRequest)
 			return
@@ -383,7 +507,14 @@ func (dh *DishHandler) ListDishes(w http.ResponseWriter, r *http.Request) {
 			return
 	}
 
-	if err := dh.DB.Where("restaurant_id = ?", restaurantID).Order("created_at desc").Find(&dishes).Error; err != nil {
+	if err := dh.DB.
+		Preload("Variants", func(db *gorm.DB) *gorm.DB {
+			// only pull back the variant name and price (plus key fields)
+			return db.Select("id, dish_id, name, price")
+		}).
+		Where("restaurant_id = ?", restaurantID).
+		Order("created_at desc").
+		Find(&dishes).Error; err != nil {
 		http.Error(w, "Internal Server ERror", http.StatusBadRequest)
 		return
 	}
@@ -454,6 +585,147 @@ func (dh *DishHandler) DeleteDish(w http.ResponseWriter, r *http.Request) {
 		success bool
 	}
 	utils.WriteSuccessResponse(w, "Dish deleted successfully", http.StatusOK, DishDeleteRes{true})
+}
+
+// AddVariant adds a new variant to a dish
+func (dh *DishHandler) AddVariant(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	authContext := utils.GetAuthContext(r)
+	rVars := mux.Vars(r)
+	dishID := rVars["dishID"]
+
+	// Verify that the dish belongs to the restaurant
+	var dish models.Dish
+	if err := dh.DB.Where("id = ?", dishID).Where("restaurant_id = ?", authContext.RestaurantID).First(&dish).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Dish not found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	var variant models.DishVariant
+	if err := json.NewDecoder(r.Body).Decode(&variant); err != nil {
+		fmt.Printf("Error decoding variant: %v\n", err)
+		http.Error(w, "Invalid variant data", http.StatusBadRequest)
+		return
+	}
+
+	variant.DishID = uuid.MustParse(dishID)
+
+	if err := dh.DB.Create(&variant).Error; err != nil {
+		fmt.Printf("Database error: %v\n", err)
+		utils.WriteErrorResponse(w, "Error occurred while saving variant", http.StatusBadRequest)
+		return
+	}
+
+	utils.WriteSuccessResponse(w, "Variant added successfully", http.StatusOK, variant)
+}
+
+// UpdateVariant updates an existing variant
+func (dh *DishHandler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	authContext := utils.GetAuthContext(r)
+	rVars := mux.Vars(r)
+	dishID := rVars["dishID"]
+	variantID := rVars["variantID"]
+
+	// Verify that the dish belongs to the restaurant
+	var dish models.Dish
+	if err := dh.DB.Where("id = ?", dishID).Where("restaurant_id = ?", authContext.RestaurantID).First(&dish).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Dish not found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify that the variant belongs to the dish
+	var variant models.DishVariant
+	if err := dh.DB.Where("id = ?", variantID).Where("dish_id = ?", dishID).First(&variant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Variant not found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	var updateData models.DishVariant
+	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+		fmt.Printf("Error decoding variant: %v\n", err)
+		http.Error(w, "Invalid variant data", http.StatusBadRequest)
+		return
+	}
+
+	if err := dh.DB.Model(&variant).Updates(&updateData).Error; err != nil {
+		fmt.Printf("Database error: %v\n", err)
+		utils.WriteErrorResponse(w, "Error occurred while updating variant", http.StatusBadRequest)
+		return
+	}
+
+	utils.WriteSuccessResponse(w, "Variant updated successfully", http.StatusOK, variant)
+}
+
+// DeleteVariant removes a variant from a dish
+func (dh *DishHandler) DeleteVariant(w http.ResponseWriter, r *http.Request) {
+	authContext := utils.GetAuthContext(r)
+	rVars := mux.Vars(r)
+	dishID := rVars["dishID"]
+	variantID := rVars["variantID"]
+
+	// Verify that the dish belongs to the restaurant
+	var dish models.Dish
+	if err := dh.DB.Where("id = ?", dishID).Where("restaurant_id = ?", authContext.RestaurantID).First(&dish).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Dish not found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Verify that the variant belongs to the dish
+	var variant models.DishVariant
+	if err := dh.DB.Where("id = ?", variantID).Where("dish_id = ?", dishID).First(&variant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Variant not found", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := dh.DB.Delete(&variant).Error; err != nil {
+		fmt.Printf("Database error: %v\n", err)
+		utils.WriteErrorResponse(w, "Error occurred while deleting variant", http.StatusBadRequest)
+		return
+	}
+
+	type DeleteRes struct {
+		Success bool `json:"success"`
+	}
+	utils.WriteSuccessResponse(w, "Variant deleted successfully", http.StatusOK, DeleteRes{true})
+}
+
+// GetDishVariants returns all variants for a dish
+func (dh *DishHandler) GetDishVariants(w http.ResponseWriter, r *http.Request) {
+	rVars := mux.Vars(r)
+	dishID := rVars["dishID"]
+
+	var variants []models.DishVariant
+	if err := dh.DB.Where("dish_id = ?", dishID).Order("display_order asc").Find(&variants).Error; err != nil {
+		fmt.Printf("Error fetching variants: %v\n", err)
+		http.Error(w, "Error fetching variants", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	utils.WriteSuccessResponse(w, "success", http.StatusOK, variants)
 }
 
 func (dh *DishHandler) ImageUploadHandler(w http.ResponseWriter, r *http.Request) {
