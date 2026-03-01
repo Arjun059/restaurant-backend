@@ -2,7 +2,6 @@ package models
 
 import (
 	"time"
-	"gorm.io/gorm"
 	"github.com/google/uuid"
 )
 
@@ -22,5 +21,4 @@ type DishVariant struct {
 	
 	CreatedAt   time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `json:"deletedAt" gorm:"index"`
 }

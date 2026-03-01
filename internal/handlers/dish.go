@@ -404,47 +404,45 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Handle variants update if provided
-		if len(incomingVariants) > 0 {
-			// Get current variants from DB
-			var currentVariants []models.DishVariant
-			if err := tx.Where("dish_id = ?", id).Find(&currentVariants).Error; err != nil {
-				return err
-			}
+		// Get current variants from DB
+		var currentVariants []models.DishVariant
+		if err := tx.Where("dish_id = ?", id).Find(&currentVariants).Error; err != nil {
+			return err
+		}
 
-			// Create a map of incoming variant IDs for easy lookup
-			incomingIDs := make(map[string]bool)
-			for _, v := range incomingVariants {
-				if v.ID != uuid.Nil {
-					incomingIDs[v.ID.String()] = true
+		// Create a map of incoming variant IDs for easy lookup
+		incomingIDs := make(map[string]bool)
+		for _, v := range incomingVariants {
+			if v.ID != uuid.Nil {
+				incomingIDs[v.ID.String()] = true
+			}
+		}
+
+		// Delete variants that are not in the incoming list
+		for _, current := range currentVariants {
+			if !incomingIDs[current.ID.String()] {
+				if err := tx.Delete(&current).Error; err != nil {
+					return err
 				}
 			}
+		}
 
-			// Delete variants that are not in the incoming list
-			for _, current := range currentVariants {
-				if !incomingIDs[current.ID.String()] {
-					if err := tx.Delete(&current).Error; err != nil {
-						return err
-					}
+		// Create or update variants
+		for i := range incomingVariants {
+			incomingVariants[i].DishID = uuid.MustParse(id)
+			if incomingVariants[i].ID == uuid.Nil {
+				// New variant - create it
+				if err := tx.Create(&incomingVariants[i]).Error; err != nil {
+					fmt.Printf("Error creating variant: %v\n", err)
+					return err
 				}
-			}
-
-			// Create or update variants
-			for i := range incomingVariants {
-				incomingVariants[i].DishID = uuid.MustParse(id)
-				if incomingVariants[i].ID == uuid.Nil {
-					// New variant - create it
-					if err := tx.Create(&incomingVariants[i]).Error; err != nil {
-						fmt.Printf("Error creating variant: %v\n", err)
-						return err
-					}
-				} else {
-					// Existing variant - update it
-					if err := tx.Model(&models.DishVariant{}).
-						Where("id = ?", incomingVariants[i].ID).
-						Updates(&incomingVariants[i]).Error; err != nil {
-						fmt.Printf("Error updating variant: %v\n", err)
-						return err
-					}
+			} else {
+				// Existing variant - update it
+				if err := tx.Model(&models.DishVariant{}).
+					Where("id = ?", incomingVariants[i].ID).
+					Updates(&incomingVariants[i]).Error; err != nil {
+					fmt.Printf("Error updating variant: %v\n", err)
+					return err
 				}
 			}
 		}
