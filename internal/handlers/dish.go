@@ -147,30 +147,30 @@ for  _, fileHeader := range files {
 	}
 
 	// Save to DB with transaction - both dish and variants succeed or fail together
-	if err := dh.DB.Transaction(func(tx *gorm.DB) error {
-		// Create the dish
-		if err := tx.Create(&body).Error; err != nil {
-			fmt.Printf("Database error: %v\n", err)
-			return err
-		}
+	err = dh.DB.Transaction(func(tx *gorm.DB) error {
 
-		// Create variants if provided
-		if len(variants) > 0 {
-			for i := range variants {
-				variants[i].DishID = body.ID
+			if err := tx.Omit("Variants").Create(&body).Error; err != nil {
+					return err
 			}
-			if err := tx.CreateInBatches(variants, 100).Error; err != nil {
-				fmt.Printf("Error creating variants: %v\n", err)
-				return err
-			}
-		}
 
-		return nil
-	}).Error; err != nil {
+			if len(variants) > 0 {
+					for i := range variants {
+							variants[i].DishID = body.ID
+					}
+
+					if err := tx.CreateInBatches(variants, 100).Error; err != nil {
+							return err
+					}
+			}
+
+			return nil
+	})
+
+	if err != nil {
 		utils.WriteErrorResponse(w, "Error occurred while saving dish and variants", http.StatusBadRequest)
 		return
 	}
-
+	
 	// Reload dish with variants
 	dh.DB.Preload("Variants").First(&body, body.ID)
 
@@ -392,7 +392,7 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Perform update with transaction - dish update and variant changes together
-	if err := dh.DB.Transaction(func(tx *gorm.DB) error {
+	err = dh.DB.Transaction(func(tx *gorm.DB) error {
 		// Update the dish
 		if err := tx.
 			Model(&models.Dish{}).
@@ -450,7 +450,9 @@ func (dh *DishHandler) UpdateDish(w http.ResponseWriter, r *http.Request) {
 		}
 
 		return nil
-	}).Error; err != nil {
+	})
+	
+	if err != nil {
 		utils.WriteErrorResponse(w, "Error occurred while updating dish and variants", http.StatusBadRequest)
 		return
 	}

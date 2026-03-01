@@ -35,6 +35,7 @@ func main() {
 		&models.Restaurant{},
 		&models.Dish{},
 		&models.User{},
+		&models.DishVariant{},
 	)
 
 	restaurantHandler := &handlers.RestaurantHandler{DB: db}
